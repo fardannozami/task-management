@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Models\Task;
 use App\Models\TaskAttachment;
+use App\Models\TaskAttachmentVersion;
 use App\Models\VirusScanResult;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;
@@ -27,14 +28,16 @@ class AttachmentService
 
     private ImageManager $imageManager;
     private VirusScanService $virusScanner;
+    private AttachmentVersionService $versionService;
 
     public function __construct()
     {
         $this->imageManager = new ImageManager(new Driver());
         $this->virusScanner = new VirusScanService();
+        $this->versionService = new AttachmentVersionService();
     }
 
-    public function upload(Task $task, UploadedFile $file): TaskAttachment
+    public function upload(Task $task, UploadedFile $file, ?string $changeDescription = null): TaskAttachment
     {
         $this->validateExtension($file);
         $this->validateMimeType($file);
@@ -60,9 +63,40 @@ class AttachmentService
             $thumbnailSize = Storage::disk('attachments')->size($thumbnailPath);
         }
 
+        $sanitizedFileName = $this->sanitizeFileName($file->getClientOriginalName());
+        $existingAttachment = TaskAttachment::where('task_id', $task->id)
+            ->where('file_name', $sanitizedFileName)
+            ->orderByDesc('created_at')
+            ->first();
+
+        if ($existingAttachment) {
+            $this->versionService->createVersion(
+                $existingAttachment,
+                $path,
+                $sanitizedFileName,
+                $file->getSize(),
+                $file->getMimeType(),
+                auth('api')->id(),
+                $changeDescription
+            );
+
+            $existingAttachment->update([
+                'file_path' => $path,
+                'file_size' => $file->getSize(),
+                'mime_type' => $file->getMimeType(),
+                'uploaded_at' => now(),
+                'thumbnail_path' => $thumbnailPath,
+                'thumbnail_size' => $thumbnailSize,
+            ]);
+
+            $this->virusScanner->scan($existingAttachment, auth('api')->id());
+
+            return $existingAttachment->fresh();
+        }
+
         $attachment = TaskAttachment::create([
             'task_id' => $task->id,
-            'file_name' => $this->sanitizeFileName($file->getClientOriginalName()),
+            'file_name' => $sanitizedFileName,
             'file_path' => $path,
             'file_size' => $file->getSize(),
             'mime_type' => $file->getMimeType(),
@@ -70,6 +104,16 @@ class AttachmentService
             'thumbnail_path' => $thumbnailPath,
             'thumbnail_size' => $thumbnailSize,
         ]);
+
+        $this->versionService->createVersion(
+            $attachment,
+            $path,
+            $sanitizedFileName,
+            $file->getSize(),
+            $file->getMimeType(),
+            auth('api')->id(),
+            $changeDescription ?? 'Initial version'
+        );
 
         $this->virusScanner->scan($attachment, auth('api')->id());
 
@@ -137,6 +181,16 @@ class AttachmentService
     public function isInfected(TaskAttachment $attachment): bool
     {
         return $this->virusScanner->isInfected($attachment);
+    }
+
+    public function getVersions(TaskAttachment $attachment)
+    {
+        return $this->versionService->getVersions($attachment);
+    }
+
+    public function restoreVersion(TaskAttachment $attachment, int $version, ?int $userId = null): TaskAttachmentVersion
+    {
+        return $this->versionService->restoreVersion($attachment, $version, $userId);
     }
 
     private function generateThumbnail(string $filePath): \Intervention\Image\Image

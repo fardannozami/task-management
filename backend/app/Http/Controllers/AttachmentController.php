@@ -43,4 +43,18 @@ class AttachmentController extends Controller
 
         return response()->json($result);
     }
+
+    public function versions(TaskAttachment $attachment): JsonResponse
+    {
+        $versions = $this->attachments->getVersions($attachment);
+
+        return response()->json($versions);
+    }
+
+    public function restoreVersion(TaskAttachment $attachment, int $version): JsonResponse
+    {
+        $result = $this->attachments->restoreVersion($attachment, $version, auth('api')->id());
+
+        return response()->json($result, 201);
+    }
 }

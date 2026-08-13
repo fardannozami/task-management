@@ -25,6 +25,8 @@ Route::middleware('jwt')->prefix('attachments')->group(function () {
     Route::get('/{attachment}/thumbnail', [AttachmentController::class, 'downloadThumbnail']);
     Route::delete('/{attachment}', [AttachmentController::class, 'destroy']);
     Route::post('/{attachment}/scan', [AttachmentController::class, 'scan']);
+    Route::get('/{attachment}/versions', [AttachmentController::class, 'versions']);
+    Route::post('/{attachment}/versions/{version}/restore', [AttachmentController::class, 'restoreVersion']);
 });
 
 Route::middleware('jwt')->prefix('chunked-uploads')->group(function () {

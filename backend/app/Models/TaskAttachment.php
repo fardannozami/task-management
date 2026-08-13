@@ -26,4 +26,9 @@ class TaskAttachment extends Model
     {
         return $this->belongsTo(Task::class);
     }
+
+    public function versions()
+    {
+        return $this->hasMany(TaskAttachmentVersion::class);
+    }
 }
