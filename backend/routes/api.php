@@ -4,6 +4,7 @@ use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\TaskController;
 use App\Http\Controllers\AttachmentController;
+use App\Http\Controllers\ChunkedUploadController;
 
 Route::post('/auth/login', [AuthController::class, 'login'])->middleware('throttle:5,1');
 Route::post('/auth/logout', [AuthController::class, 'logout'])->middleware('jwt');
@@ -23,4 +24,11 @@ Route::middleware('jwt')->prefix('attachments')->group(function () {
     Route::get('/{attachment}/download', [AttachmentController::class, 'download']);
     Route::get('/{attachment}/thumbnail', [AttachmentController::class, 'downloadThumbnail']);
     Route::delete('/{attachment}', [AttachmentController::class, 'destroy']);
+});
+
+Route::middleware('jwt')->prefix('chunked-uploads')->group(function () {
+    Route::post('/tasks/{task}/init', [ChunkedUploadController::class, 'init']);
+    Route::post('/{chunkedUpload}/chunk', [ChunkedUploadController::class, 'uploadChunk']);
+    Route::post('/{chunkedUpload}/merge', [ChunkedUploadController::class, 'merge']);
+    Route::delete('/{chunkedUpload}', [ChunkedUploadController::class, 'cancel']);
 });
