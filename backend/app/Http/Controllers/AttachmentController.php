@@ -36,4 +36,11 @@ class AttachmentController extends Controller
 
         return response()->json(null, 204);
     }
+
+    public function scan(TaskAttachment $attachment): JsonResponse
+    {
+        $result = $this->attachments->scan($attachment, auth('api')->id());
+
+        return response()->json($result);
+    }
 }

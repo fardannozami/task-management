@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Models\Task;
 use App\Models\TaskAttachment;
+use App\Models\VirusScanResult;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
@@ -25,10 +26,12 @@ class AttachmentService
     private const THUMBNAIL_QUALITY = 80;
 
     private ImageManager $imageManager;
+    private VirusScanService $virusScanner;
 
     public function __construct()
     {
         $this->imageManager = new ImageManager(new Driver());
+        $this->virusScanner = new VirusScanService();
     }
 
     public function upload(Task $task, UploadedFile $file): TaskAttachment
@@ -57,7 +60,7 @@ class AttachmentService
             $thumbnailSize = Storage::disk('attachments')->size($thumbnailPath);
         }
 
-        return TaskAttachment::create([
+        $attachment = TaskAttachment::create([
             'task_id' => $task->id,
             'file_name' => $this->sanitizeFileName($file->getClientOriginalName()),
             'file_path' => $path,
@@ -67,10 +70,18 @@ class AttachmentService
             'thumbnail_path' => $thumbnailPath,
             'thumbnail_size' => $thumbnailSize,
         ]);
+
+        $this->virusScanner->scan($attachment, auth('api')->id());
+
+        return $attachment;
     }
 
     public function download(TaskAttachment $attachment)
     {
+        if ($this->isInfected($attachment)) {
+            abort(403, 'File is quarantined due to security concerns.');
+        }
+
         $disk = Storage::disk('attachments');
 
         if (!$disk->exists($attachment->file_path)) {
@@ -106,6 +117,26 @@ class AttachmentService
         }
 
         $attachment->delete();
+    }
+
+    public function scan(TaskAttachment $attachment, ?int $userId = null): VirusScanResult
+    {
+        return $this->virusScanner->scan($attachment, $userId);
+    }
+
+    public function getScanResult(TaskAttachment $attachment): ?VirusScanResult
+    {
+        return $this->virusScanner->getScanResult($attachment);
+    }
+
+    public function isClean(TaskAttachment $attachment): bool
+    {
+        return $this->virusScanner->isClean($attachment);
+    }
+
+    public function isInfected(TaskAttachment $attachment): bool
+    {
+        return $this->virusScanner->isInfected($attachment);
     }
 
     private function generateThumbnail(string $filePath): \Intervention\Image\Image

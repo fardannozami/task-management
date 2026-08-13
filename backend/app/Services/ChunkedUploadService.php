@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Models\ChunkedUpload;
 use App\Models\Task;
+use App\Models\VirusScanResult;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
@@ -93,6 +94,8 @@ class ChunkedUploadService
             'uploaded_at' => now(),
         ]);
 
+        $this->scanAttachment($attachment);
+
         $upload->update([
             'status' => 'completed',
             'final_path' => $finalPath,
@@ -138,5 +141,11 @@ class ChunkedUploadService
         }
 
         return $fileName;
+    }
+
+    private function scanAttachment(\App\Models\TaskAttachment $attachment): void
+    {
+        $scanner = new \App\Services\VirusScanService();
+        $scanner->scan($attachment, auth('api')->id());
     }
 }
