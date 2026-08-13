@@ -16,7 +16,7 @@ Route::middleware('jwt')->prefix('tasks')->group(function () {
     Route::put('/{task}', [TaskController::class, 'update']);
     Route::delete('/{task}', [TaskController::class, 'destroy']);
 
-    Route::post('/{task}/attachments', [AttachmentController::class, 'upload']);
+    Route::post('/{task}/attachments', [AttachmentController::class, 'upload'])->middleware('throttle:10,1');
 });
 
 Route::middleware('jwt')->prefix('attachments')->group(function () {
