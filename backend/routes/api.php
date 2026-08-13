@@ -21,5 +21,6 @@ Route::middleware('jwt')->prefix('tasks')->group(function () {
 
 Route::middleware('jwt')->prefix('attachments')->group(function () {
     Route::get('/{attachment}/download', [AttachmentController::class, 'download']);
+    Route::get('/{attachment}/thumbnail', [AttachmentController::class, 'downloadThumbnail']);
     Route::delete('/{attachment}', [AttachmentController::class, 'destroy']);
 });

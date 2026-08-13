@@ -25,6 +25,11 @@ class AttachmentController extends Controller
         return $this->attachments->download($attachment);
     }
 
+    public function downloadThumbnail(TaskAttachment $attachment): StreamedResponse
+    {
+        return $this->attachments->downloadThumbnail($attachment);
+    }
+
     public function destroy(TaskAttachment $attachment): JsonResponse
     {
         $this->attachments->delete($attachment);

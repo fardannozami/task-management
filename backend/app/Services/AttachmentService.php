@@ -7,6 +7,8 @@ use App\Models\TaskAttachment;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
+use Intervention\Image\ImageManager;
+use Intervention\Image\Drivers\Gd\Driver;
 
 class AttachmentService
 {
@@ -17,6 +19,17 @@ class AttachmentService
     ];
 
     private const MAX_FILE_SIZE = 51200;
+
+    private const THUMBNAIL_WIDTH = 300;
+    private const THUMBNAIL_HEIGHT = 300;
+    private const THUMBNAIL_QUALITY = 80;
+
+    private ImageManager $imageManager;
+
+    public function __construct()
+    {
+        $this->imageManager = new ImageManager(new Driver());
+    }
 
     public function upload(Task $task, UploadedFile $file): TaskAttachment
     {
@@ -33,6 +46,17 @@ class AttachmentService
             @chmod(storage_path('app/attachments/' . $path), 0640);
         }
 
+        $thumbnailPath = null;
+        $thumbnailSize = null;
+
+        if (str_starts_with($file->getMimeType(), 'image/')) {
+            $thumbnail = $this->generateThumbnail($file->getRealPath());
+            $thumbnailRandomName = Str::random(40) . '.jpg';
+            $thumbnailPath = 'thumbnails/' . $thumbnailRandomName;
+            Storage::disk('attachments')->put($thumbnailPath, $thumbnail->toJpeg(self::THUMBNAIL_QUALITY));
+            $thumbnailSize = Storage::disk('attachments')->size($thumbnailPath);
+        }
+
         return TaskAttachment::create([
             'task_id' => $task->id,
             'file_name' => $this->sanitizeFileName($file->getClientOriginalName()),
@@ -40,6 +64,8 @@ class AttachmentService
             'file_size' => $file->getSize(),
             'mime_type' => $file->getMimeType(),
             'uploaded_at' => now(),
+            'thumbnail_path' => $thumbnailPath,
+            'thumbnail_size' => $thumbnailSize,
         ]);
     }
 
@@ -54,10 +80,48 @@ class AttachmentService
         return $disk->download($attachment->file_path, $attachment->file_name);
     }
 
+    public function downloadThumbnail(TaskAttachment $attachment)
+    {
+        if (empty($attachment->thumbnail_path)) {
+            abort(404, 'Thumbnail not found');
+        }
+
+        $disk = Storage::disk('attachments');
+
+        if (!$disk->exists($attachment->thumbnail_path)) {
+            abort(404, 'Thumbnail file not found');
+        }
+
+        $thumbnailName = pathinfo($attachment->file_name, PATHINFO_FILENAME) . '_thumbnail.jpg';
+
+        return $disk->download($attachment->thumbnail_path, $thumbnailName);
+    }
+
     public function delete(TaskAttachment $attachment): void
     {
         Storage::disk('attachments')->delete($attachment->file_path);
+
+        if ($attachment->thumbnail_path) {
+            Storage::disk('attachments')->delete($attachment->thumbnail_path);
+        }
+
         $attachment->delete();
+    }
+
+    private function generateThumbnail(string $filePath): \Intervention\Image\Image
+    {
+        $image = $this->imageManager->read($filePath);
+
+        $image->scaleDown(width: self::THUMBNAIL_WIDTH, height: self::THUMBNAIL_HEIGHT);
+
+        if ($image->width() > self::THUMBNAIL_WIDTH || $image->height() > self::THUMBNAIL_HEIGHT) {
+            $image->resize(self::THUMBNAIL_WIDTH, self::THUMBNAIL_HEIGHT, function ($constraint) {
+                $constraint->aspectRatio();
+                $constraint->upsize();
+            });
+        }
+
+        return $image;
     }
 
     private function validateExtension(UploadedFile $file): void
