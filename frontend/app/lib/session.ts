@@ -62,3 +62,9 @@ export async function deleteSession() {
   const cookieStore = await cookies()
   cookieStore.delete('session')
 }
+
+export async function getSessionToken(): Promise<string | null> {
+  const cookie = (await cookies()).get('session')?.value
+  const session = await decryptSession(cookie)
+  return session?.accessToken ?? null
+}

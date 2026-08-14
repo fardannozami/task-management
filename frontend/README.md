@@ -38,6 +38,17 @@ The dashboard subscribes to the private `tasks` channel via [pusher-js](https://
 
 Requirements: the backend must be running (`php artisan serve`) together with Reverb (`php artisan reverb:start`).
 
+## File Uploads (Drag & Drop)
+
+Click any task (eyeball icon) to open its detail view. There you can drag & drop files (or click to browse) to attach them to the task:
+
+- Supports images, documents (pdf/doc/docx/xls/xlsx/txt), and videos up to 50MB per file.
+- Multiple files upload in parallel with per-file status (uploading / error).
+- Existing attachments show name, size, upload date, an image thumbnail when available, and a virus-scan badge.
+- Actions per file: download, run a scan, or delete.
+
+File bytes travel through server actions (`app/actions/attachments.ts`), which attach the session JWT server-side, so the token never reaches the browser. Downloads/thumbnails are streamed through `app/api/attachments/[id]/download` and `app/api/attachments/[id]/thumbnail` route handlers. Thumbnails and background scans are processed by the backend queue worker (`php artisan queue:work`).
+
 
 ## Learn More
 

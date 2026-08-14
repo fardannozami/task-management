@@ -1,9 +1,8 @@
 'use server'
 
-import { cookies } from 'next/headers'
 import { revalidatePath } from 'next/cache'
 import { redirect } from 'next/navigation'
-import { decryptSession } from '@/app/lib/session'
+import { getSessionToken } from '@/app/lib/session'
 import {
   taskSchema,
   type Paginated,
@@ -24,14 +23,13 @@ export type TaskListParams = {
 }
 
 async function getAccessToken(): Promise<string> {
-  const cookie = (await cookies()).get('session')?.value
-  const session = await decryptSession(cookie)
+  const token = await getSessionToken()
 
-  if (!session?.accessToken) {
+  if (!token) {
     redirect('/login')
   }
 
-  return session.accessToken
+  return token
 }
 
 async function authorizedFetch(path: string, init?: RequestInit) {

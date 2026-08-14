@@ -12,6 +12,7 @@ import {
   type TaskStatus,
 } from '@/app/lib/definitions'
 import TaskForm from '@/app/ui/task-form'
+import TaskDetail from '@/app/ui/task-detail'
 
 const statusStyles: Record<TaskStatus, string> = {
   pending: 'bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-400',
@@ -49,15 +50,28 @@ function Badge({ className, children }: { className: string; children: ReactNode
 
 function ActionButtons({
   task,
+  onView,
   onEdit,
   onDelete,
 }: {
   task: Task
+  onView: (task: Task) => void
   onEdit: (task: Task) => void
   onDelete: (task: Task) => void
 }) {
   return (
     <div className="flex items-center justify-end gap-1">
+      <button
+        type="button"
+        onClick={() => onView(task)}
+        aria-label={`View ${task.title}`}
+        className="rounded-lg p-2 text-zinc-500 transition-colors hover:bg-zinc-100 hover:text-black dark:hover:bg-zinc-800 dark:hover:text-zinc-50"
+      >
+        <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+          <path strokeLinecap="round" strokeLinejoin="round" d="M2.036 12.322a1.012 1.012 0 010-.639C3.423 7.51 7.36 4.5 12 4.5c4.638 0 8.573 3.007 9.963 7.178.07.207.07.431 0 .639C20.577 16.49 16.64 19.5 12 19.5c-4.638 0-8.573-3.007-9.963-7.178z" />
+          <path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+        </svg>
+      </button>
       <button
         type="button"
         onClick={() => onEdit(task)}
@@ -104,6 +118,7 @@ export default function TaskDashboard({
   const [search, setSearch] = useState(initialSearch)
   const [prevSearch, setPrevSearch] = useState(initialSearch)
   const [modal, setModal] = useState<{ mode: 'create' | 'edit'; task?: Task } | null>(null)
+  const [detailTask, setDetailTask] = useState<Task | null>(null)
   const [taskToDelete, setTaskToDelete] = useState<Task | null>(null)
   const [deleteError, setDeleteError] = useState<string | null>(null)
   const [isDeleting, startTransition] = useTransition()
@@ -278,7 +293,20 @@ export default function TaskDashboard({
                   {tasks.data.map((task) => (
                     <tr key={task.id} className="transition-colors hover:bg-zinc-50 dark:hover:bg-zinc-800/40">
                       <td className="px-4 py-3">
-                        <p className="font-medium text-black dark:text-zinc-50">{task.title}</p>
+                        <div className="flex items-center gap-2">
+                          <p className="font-medium text-black dark:text-zinc-50">{task.title}</p>
+                          {task.attachments_count ? (
+                            <span
+                              className="inline-flex items-center gap-1 text-xs text-zinc-400"
+                              title={`${task.attachments_count} attachment${task.attachments_count === 1 ? '' : 's'}`}
+                            >
+                              <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                                <path strokeLinecap="round" strokeLinejoin="round" d="M18.375 12.739l-7.693 7.693a4.5 4.5 0 01-6.364-6.364l10.94-10.94A3 3 0 1119.5 7.372L8.552 18.32m.009-.01l-.01.01m5.699-9.941l-7.81 7.81a1.5 1.5 0 002.112 2.13" />
+                              </svg>
+                              {task.attachments_count}
+                            </span>
+                          ) : null}
+                        </div>
                         {task.description && (
                           <p className="mt-0.5 line-clamp-1 text-xs text-zinc-500 dark:text-zinc-400">
                             {task.description}
@@ -298,7 +326,12 @@ export default function TaskDashboard({
                         {formatDate(task.due_date)}
                       </td>
                       <td className="px-4 py-3">
-                        <ActionButtons task={task} onEdit={() => setModal({ mode: 'edit', task })} onDelete={setTaskToDelete} />
+                        <ActionButtons
+                          task={task}
+                          onView={setDetailTask}
+                          onEdit={() => setModal({ mode: 'edit', task })}
+                          onDelete={setTaskToDelete}
+                        />
                       </td>
                     </tr>
                   ))}
@@ -311,13 +344,31 @@ export default function TaskDashboard({
                 <div key={task.id} className="p-4">
                   <div className="flex items-start justify-between gap-3">
                     <div className="min-w-0">
-                      <p className="font-medium text-black dark:text-zinc-50">{task.title}</p>
+                      <div className="flex items-center gap-2">
+                        <p className="font-medium text-black dark:text-zinc-50">{task.title}</p>
+                        {task.attachments_count ? (
+                          <span
+                            className="inline-flex items-center gap-1 text-xs text-zinc-400"
+                            title={`${task.attachments_count} attachment${task.attachments_count === 1 ? '' : 's'}`}
+                          >
+                            <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                              <path strokeLinecap="round" strokeLinejoin="round" d="M18.375 12.739l-7.693 7.693a4.5 4.5 0 01-6.364-6.364l10.94-10.94A3 3 0 1119.5 7.372L8.552 18.32m.009-.01l-.01.01m5.699-9.941l-7.81 7.81a1.5 1.5 0 002.112 2.13" />
+                            </svg>
+                            {task.attachments_count}
+                          </span>
+                        ) : null}
+                      </div>
                       <div className="mt-2 flex flex-wrap items-center gap-2">
                         <Badge className={statusStyles[task.status]}>{task.status.replace('_', ' ')}</Badge>
                         <Badge className={priorityStyles[task.priority]}>{task.priority}</Badge>
                       </div>
                     </div>
-                    <ActionButtons task={task} onEdit={() => setModal({ mode: 'edit', task })} onDelete={setTaskToDelete} />
+                    <ActionButtons
+                      task={task}
+                      onView={setDetailTask}
+                      onEdit={() => setModal({ mode: 'edit', task })}
+                      onDelete={setTaskToDelete}
+                    />
                   </div>
                   <dl className="mt-3 space-y-1.5 text-sm text-zinc-600 dark:text-zinc-400">
                     <div className="flex justify-between">
@@ -377,6 +428,14 @@ export default function TaskDashboard({
           task={modal.task}
           users={users}
           onClose={() => setModal(null)}
+        />
+      )}
+
+      {detailTask && (
+        <TaskDetail
+          task={detailTask}
+          onClose={() => setDetailTask(null)}
+          onChanged={() => router.refresh()}
         />
       )}
 

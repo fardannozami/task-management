@@ -41,7 +41,7 @@ class TaskController extends Controller
 
     public function show(Task $task): JsonResponse
     {
-        $task->load(['assignedUser', 'creator', 'attachments', 'comments.user']);
+        $task->load(['assignedUser', 'creator', 'attachments.virusScanResult', 'comments.user']);
 
         return response()->json($task);
     }

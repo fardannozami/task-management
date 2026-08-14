@@ -65,6 +65,29 @@ export interface TaskUser {
   email: string
 }
 
+export interface VirusScanResult {
+  id: number
+  task_attachment_id: number
+  status: 'clean' | 'infected' | 'suspicious' | 'pending'
+  threats_found: string | null
+  action_taken: string
+  scanned_at: string | null
+}
+
+export interface TaskAttachment {
+  id: number
+  task_id: number
+  file_name: string
+  file_size: number
+  mime_type: string
+  uploaded_at: string
+  thumbnail_path: string | null
+  thumbnail_size: number | null
+  created_at: string
+  updated_at: string
+  virus_scan_result?: VirusScanResult | null
+}
+
 export interface Task {
   id: number
   title: string
@@ -78,6 +101,8 @@ export interface Task {
   updated_at: string
   assigned_user?: TaskUser | null
   creator?: TaskUser | null
+  attachments?: TaskAttachment[]
+  attachments_count?: number
 }
 
 export interface Paginated<T> {

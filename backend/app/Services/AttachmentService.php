@@ -7,6 +7,7 @@ use App\Jobs\ScanAttachment;
 use App\Models\Task;
 use App\Models\TaskAttachment;
 use App\Models\TaskAttachmentVersion;
+use App\Models\VirusScanResult;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;

@@ -16,7 +16,8 @@ class TaskService
     public function getTasks(array $filters = [], int $perPage = 10): LengthAwarePaginator
     {
         $query = Task::query()
-            ->with(['assignedUser', 'creator']);
+            ->with(['assignedUser', 'creator'])
+            ->withCount('attachments');
 
         if (!empty($filters['status'])) {
             $query->where('status', $filters['status']);

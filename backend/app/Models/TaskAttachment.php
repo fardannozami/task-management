@@ -6,6 +6,7 @@ use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 
 #[Fillable(['task_id', 'file_name', 'file_path', 'file_size', 'mime_type', 'uploaded_at', 'thumbnail_path', 'thumbnail_size'])]
 class TaskAttachment extends Model
@@ -30,5 +31,10 @@ class TaskAttachment extends Model
     public function versions()
     {
         return $this->hasMany(TaskAttachmentVersion::class);
+    }
+
+    public function virusScanResult(): HasOne
+    {
+        return $this->hasOne(VirusScanResult::class, 'task_attachment_id')->latestOfMany();
     }
 }
