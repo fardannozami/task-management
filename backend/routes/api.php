@@ -6,6 +6,7 @@ use App\Http\Controllers\TaskController;
 use App\Http\Controllers\AttachmentController;
 use App\Http\Controllers\ChunkedUploadController;
 use App\Http\Controllers\BulkTaskController;
+use App\Http\Controllers\ExportController;
 
 Route::post('/auth/login', [AuthController::class, 'login'])->middleware('throttle:5,1');
 Route::post('/auth/logout', [AuthController::class, 'logout'])->middleware('jwt');
@@ -39,4 +40,11 @@ Route::middleware('jwt')->prefix('chunked-uploads')->group(function () {
 
 Route::middleware('jwt')->prefix('bulk')->group(function () {
     Route::post('/tasks/status', [BulkTaskController::class, 'updateStatus']);
+});
+
+Route::middleware('jwt')->prefix('exports')->group(function () {
+    Route::post('/tasks/csv', [ExportController::class, 'exportCsv']);
+    Route::post('/tasks/pdf', [ExportController::class, 'exportPdf']);
+    Route::get('/tasks/csv/download', [ExportController::class, 'downloadCsv']);
+    Route::get('/tasks/pdf/download', [ExportController::class, 'downloadPdf']);
 });
