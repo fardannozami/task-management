@@ -20,7 +20,7 @@ class AuthController extends Controller
             return response()->json(['message' => 'Invalid credentials'], 401);
         }
 
-        $user = auth('api')->user();
+        $user = JWTAuth::setToken($token)->user();
 
         return response()->json([
             'access_token' => $token,

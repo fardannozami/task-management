@@ -2,6 +2,9 @@
 
 namespace App\Services;
 
+use App\Events\TaskCreated;
+use App\Events\TaskDeleted;
+use App\Events\TaskUpdated;
 use App\Jobs\SendTaskAssignmentEmail;
 use App\Models\Task;
 use App\Models\User;
@@ -63,6 +66,8 @@ class TaskService
             $this->dispatchAssignmentNotification($task);
         }
 
+        broadcast(new TaskCreated($task->fresh(['assignedUser', 'creator'])));
+
         return $task;
     }
 
@@ -78,11 +83,16 @@ class TaskService
             $this->dispatchAssignmentNotification($task);
         }
 
-        return $task->fresh(['assignedUser', 'creator']);
+        $task = $task->fresh(['assignedUser', 'creator']);
+
+        broadcast(new TaskUpdated($task));
+
+        return $task;
     }
 
     public function deleteTask(Task $task): void
     {
+        broadcast(new TaskDeleted($task->id));
         $task->delete();
     }
 

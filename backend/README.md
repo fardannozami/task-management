@@ -15,6 +15,7 @@ A Laravel 13 backend API for task management with advanced file handling, queue-
   - Async thumbnail generation and virus scanning
   - CSV/PDF data exports
 - Role-based access control
+- Real-time task updates via WebSockets (Laravel Reverb)
 
 ## Documentation
 
@@ -32,6 +33,7 @@ A Laravel 13 backend API for task management with advanced file handling, queue-
 - **Database**: MySQL
 - **Authentication**: JWT (tymon/jwt-auth)
 - **Queue**: Database driver
+- **Real-time**: Laravel Reverb + Pusher protocol
 - **PDF Generation**: barryvdh/laravel-dompdf
 - **CSV**: league/csv
 - **API Docs**: scalar/laravel
@@ -101,10 +103,27 @@ php artisan storage:link
 php artisan queue:work --tries=3
 ```
 
-11. Start development server:
+11. Start Reverb WebSocket server (in separate terminal):
+```bash
+php artisan reverb:start
+```
+
+12. Start development server:
 ```bash
 php artisan serve
 ```
+
+## Real-time Updates (WebSockets)
+
+Task CRUD operations broadcast events over a private `tasks` channel using Laravel Reverb (Pusher protocol):
+
+- `task.created` - a task was created
+- `task.updated` - a task was updated
+- `task.deleted` - a task was deleted
+
+Clients (the frontend dashboard) subscribe to `private-tasks`; channel authorization is handled by `POST /broadcasting/auth`, protected by the JWT `api` guard.
+
+Configure Reverb credentials in `.env` (see `REVERB_*` variables below). Reverb must be running (`php artisan reverb:start`) for real-time updates to work.
 
 ## Default Seeded Data
 
@@ -155,6 +174,15 @@ Or use Supervisor for automatic restarts.
 | `DB_USERNAME` | Database user | root |
 | `DB_PASSWORD` | Database password | null |
 | `QUEUE_CONNECTION` | Queue driver | database |
+| `BROADCAST_CONNECTION` | Broadcast driver | reverb |
+| `REVERB_APP_ID` | Reverb application ID | task-management |
+| `REVERB_APP_KEY` | Reverb public app key | task-management-key |
+| `REVERB_APP_SECRET` | Reverb app secret | (generated) |
+| `REVERB_HOST` | Reverb client host | 127.0.0.1 |
+| `REVERB_PORT` | Reverb client port | 8080 |
+| `REVERB_SCHEME` | Reverb scheme | http |
+| `REVERB_SERVER_HOST` | Reverb server bind host | 127.0.0.1 |
+| `REVERB_SERVER_PORT` | Reverb server bind port | 8080 |
 | `MAIL_MAILER` | Mail driver | log |
 | `JWT_SECRET` | JWT signing key | auto-generated |
 
