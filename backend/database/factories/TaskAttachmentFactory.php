@@ -41,9 +41,11 @@ class TaskAttachmentFactory extends Factory
             'text/markdown',
         ];
 
+        $task = Task::factory()->create();
+
         return [
-            'task_id' => Task::inRandomOrder()->value('id'),
-            'file_name' => fake()->unique()->randomElement($fileNames),
+            'task_id' => $task->id,
+            'file_name' => fake()->randomElement($fileNames),
             'file_path' => fake()->filePath(),
             'file_size' => fake()->numberBetween(1024, 10485760),
             'mime_type' => fake()->randomElement($mimeTypes),
