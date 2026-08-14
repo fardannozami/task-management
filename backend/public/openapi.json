@@ -1,0 +1,595 @@
+{
+  "openapi": "3.0.0",
+  "info": {
+    "title": "Task Management API",
+    "version": "1.0.0",
+    "description": "API documentation for the Task Management System"
+  },
+  "servers": [
+    {
+      "url": "http://localhost:8000/api",
+      "description": "Local development server"
+    }
+  ],
+  "security": [
+    {
+      "BearerAuth": []
+    }
+  ],
+  "components": {
+    "securitySchemes": {
+      "BearerAuth": {
+        "type": "http",
+        "scheme": "bearer",
+        "bearerFormat": "JWT"
+      }
+    },
+    "schemas": {
+      "Task": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "integer" },
+          "title": { "type": "string" },
+          "description": { "type": "string", "nullable": true },
+          "status": { "type": "string", "enum": ["pending", "in_progress", "completed", "cancelled"] },
+          "priority": { "type": "string", "enum": ["low", "medium", "high", "urgent"] },
+          "assigned_user_id": { "type": "integer", "nullable": true },
+          "created_by": { "type": "integer" },
+          "due_date": { "type": "string", "format": "date-time", "nullable": true },
+          "created_at": { "type": "string", "format": "date-time" },
+          "updated_at": { "type": "string", "format": "date-time" }
+        }
+      },
+      "TaskAttachment": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "integer" },
+          "task_id": { "type": "integer" },
+          "file_name": { "type": "string" },
+          "file_path": { "type": "string" },
+          "file_size": { "type": "integer" },
+          "mime_type": { "type": "string" },
+          "thumbnail_path": { "type": "string", "nullable": true },
+          "thumbnail_size": { "type": "integer", "nullable": true },
+          "uploaded_at": { "type": "string", "format": "date-time" },
+          "created_at": { "type": "string", "format": "date-time" },
+          "updated_at": { "type": "string", "format": "date-time" }
+        }
+      },
+      "TaskComment": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "integer" },
+          "task_id": { "type": "integer" },
+          "user_id": { "type": "integer" },
+          "comment": { "type": "string" },
+          "created_at": { "type": "string", "format": "date-time" },
+          "updated_at": { "type": "string", "format": "date-time" }
+        }
+      },
+      "VirusScanResult": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "integer" },
+          "task_attachment_id": { "type": "integer" },
+          "scan_engine": { "type": "string" },
+          "status": { "type": "string", "enum": ["pending", "clean", "infected", "suspicious", "error"] },
+          "threats_found": { "type": "string", "nullable": true },
+          "action_taken": { "type": "string" },
+          "scanned_at": { "type": "string", "format": "date-time" }
+        }
+      }
+    }
+  },
+  "paths": {
+    "/auth/login": {
+      "post": {
+        "tags": ["Authentication"],
+        "summary": "Login user",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "email": { "type": "string", "format": "email" },
+                  "password": { "type": "string" }
+                },
+                "required": ["email", "password"]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful login",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "access_token": { "type": "string" },
+                    "token_type": { "type": "string" },
+                    "expires_in": { "type": "integer" },
+                    "user": { "$ref": "#/components/schemas/User" }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Invalid credentials",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": { "type": "string" }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/auth/logout": {
+      "post": {
+        "tags": ["Authentication"],
+        "summary": "Logout user",
+        "responses": {
+          "200": {
+            "description": "Successfully logged out"
+          }
+        }
+      }
+    },
+    "/auth/me": {
+      "get": {
+        "tags": ["Authentication"],
+        "summary": "Get current user info",
+        "responses": {
+          "200": {
+            "description": "Current user data",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/User" }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/tasks": {
+      "get": {
+        "tags": ["Tasks"],
+        "summary": "List tasks with pagination, filtering, and sorting",
+        "parameters": [
+          { "name": "status", "in": "query", "schema": { "type": "string" } },
+          { "name": "priority", "in": "query", "schema": { "type": "string" } },
+          { "name": "assigned_user_id", "in": "query", "schema": { "type": "integer" } },
+          { "name": "created_by", "in": "query", "schema": { "type": "integer" } },
+          { "name": "due_date_from", "in": "query", "schema": { "type": "string", "format": "date-time" } },
+          { "name": "due_date_to", "in": "query", "schema": { "type": "string", "format": "date-time" } },
+          { "name": "search", "in": "query", "schema": { "type": "string" } },
+          { "name": "sort_by", "in": "query", "schema": { "type": "string", "default": "created_at" } },
+          { "name": "sort_dir", "in": "query", "schema": { "type": "string", "enum": ["asc", "desc"], "default": "desc" } },
+          { "name": "per_page", "in": "query", "schema": { "type": "integer", "default": 10 } }
+        ],
+        "responses": {
+          "200": {
+            "description": "Paginated task list",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": { "type": "array", "items": { "$ref": "#/components/schemas/Task" } },
+                    "current_page": { "type": "integer" },
+                    "last_page": { "type": "integer" },
+                    "per_page": { "type": "integer" },
+                    "total": { "type": "integer" }
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": ["Tasks"],
+        "summary": "Create new task",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "title": { "type": "string" },
+                  "description": { "type": "string", "nullable": true },
+                  "status": { "type": "string", "enum": ["pending", "in_progress", "completed", "cancelled"] },
+                  "priority": { "type": "string", "enum": ["low", "medium", "high", "urgent"] },
+                  "assigned_user_id": { "type": "integer", "nullable": true },
+                  "due_date": { "type": "string", "format": "date-time", "nullable": true }
+                },
+                "required": ["title"]
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Task created",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/Task" }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/tasks/{task}": {
+      "get": {
+        "tags": ["Tasks"],
+        "summary": "Show single task",
+        "parameters": [
+          { "name": "task", "in": "path", "required": true, "schema": { "type": "integer" } }
+        ],
+        "responses": {
+          "200": {
+            "description": "Task details",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/Task" }
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "tags": ["Tasks"],
+        "summary": "Update task",
+        "parameters": [
+          { "name": "task", "in": "path", "required": true, "schema": { "type": "integer" } }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "title": { "type": "string" },
+                  "description": { "type": "string", "nullable": true },
+                  "status": { "type": "string", "enum": ["pending", "in_progress", "completed", "cancelled"] },
+                  "priority": { "type": "string", "enum": ["low", "medium", "high", "urgent"] },
+                  "assigned_user_id": { "type": "integer", "nullable": true },
+                  "due_date": { "type": "string", "format": "date-time", "nullable": true }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Updated task",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/Task" }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": ["Tasks"],
+        "summary": "Delete task",
+        "parameters": [
+          { "name": "task", "in": "path", "required": true, "schema": { "type": "integer" } }
+        ],
+        "responses": {
+          "204": {
+            "description": "Task deleted"
+          }
+        }
+      }
+    },
+    "/tasks/{task}/attachments": {
+      "post": {
+        "tags": ["Attachments"],
+        "summary": "Upload file attachment",
+        "parameters": [
+          { "name": "task", "in": "path", "required": true, "schema": { "type": "integer" } }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "file": { "type": "string", "format": "binary" }
+                },
+                "required": ["file"]
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Attachment uploaded",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/TaskAttachment" }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/attachments/{attachment}": {
+      "get": {
+        "tags": ["Attachments"],
+        "summary": "Download attachment",
+        "parameters": [
+          { "name": "attachment", "in": "path", "required": true, "schema": { "type": "integer" } }
+        ],
+        "responses": {
+          "200": {
+            "description": "File download"
+          },
+          "403": {
+            "description": "File quarantined"
+          }
+        }
+      },
+      "delete": {
+        "tags": ["Attachments"],
+        "summary": "Delete attachment",
+        "parameters": [
+          { "name": "attachment", "in": "path", "required": true, "schema": { "type": "integer" } }
+        ],
+        "responses": {
+          "204": {
+            "description": "Attachment deleted"
+          }
+        }
+      }
+    },
+    "/attachments/{attachment}/thumbnail": {
+      "get": {
+        "tags": ["Attachments"],
+        "summary": "Download thumbnail",
+        "parameters": [
+          { "name": "attachment", "in": "path", "required": true, "schema": { "type": "integer" } }
+        ],
+        "responses": {
+          "200": {
+            "description": "Thumbnail download"
+          }
+        }
+      }
+    },
+    "/attachments/{attachment}/scan": {
+      "post": {
+        "tags": ["Attachments"],
+        "summary": "Scan attachment for viruses",
+        "parameters": [
+          { "name": "attachment", "in": "path", "required": true, "schema": { "type": "integer" } }
+        ],
+        "responses": {
+          "200": {
+            "description": "Scan result",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/VirusScanResult" }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/attachments/{attachment}/versions": {
+      "get": {
+        "tags": ["Attachments"],
+        "summary": "List attachment versions",
+        "parameters": [
+          { "name": "attachment", "in": "path", "required": true, "schema": { "type": "integer" } }
+        ],
+        "responses": {
+          "200": {
+            "description": "Version history",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": { "$ref": "#/components/schemas/TaskAttachmentVersion" }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/attachments/{attachment}/versions/{version}/restore": {
+      "post": {
+        "tags": ["Attachments"],
+        "summary": "Restore previous version",
+        "parameters": [
+          { "name": "attachment", "in": "path", "required": true, "schema": { "type": "integer" } },
+          { "name": "version", "in": "path", "required": true, "schema": { "type": "integer" } }
+        ],
+        "responses": {
+          "201": {
+            "description": "Version restored"
+          }
+        }
+      }
+    },
+    "/chunked-uploads/tasks/{task}/init": {
+      "post": {
+        "tags": ["Chunked Uploads"],
+        "summary": "Initialize chunked upload",
+        "parameters": [
+          { "name": "task", "in": "path", "required": true, "schema": { "type": "integer" } }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "file_name": { "type": "string" },
+                  "total_size": { "type": "integer" },
+                  "mime_type": { "type": "string", "nullable": true }
+                },
+                "required": ["file_name", "total_size"]
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Upload session created"
+          }
+        }
+      }
+    },
+    "/chunked-uploads/{chunkedUpload}/chunk": {
+      "post": {
+        "tags": ["Chunked Uploads"],
+        "summary": "Upload chunk",
+        "parameters": [
+          { "name": "chunkedUpload", "in": "path", "required": true, "schema": { "type": "integer" } }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "chunk": { "type": "string", "format": "binary" },
+                  "chunk_index": { "type": "integer" }
+                },
+                "required": ["chunk", "chunk_index"]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Chunk uploaded"
+          }
+        }
+      }
+    },
+    "/chunked-uploads/{chunkedUpload}/merge": {
+      "post": {
+        "tags": ["Chunked Uploads"],
+        "summary": "Merge chunks into final file",
+        "parameters": [
+          { "name": "chunkedUpload", "in": "path", "required": true, "schema": { "type": "integer" } }
+        ],
+        "responses": {
+          "201": {
+            "description": "File merged",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/TaskAttachment" }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/chunked-uploads/{chunkedUpload}": {
+      "delete": {
+        "tags": ["Chunked Uploads"],
+        "summary": "Cancel chunked upload",
+        "parameters": [
+          { "name": "chunkedUpload", "in": "path", "required": true, "schema": { "type": "integer" } }
+        ],
+        "responses": {
+          "204": {
+            "description": "Upload cancelled"
+          }
+        }
+      }
+    },
+    "/bulk/tasks/status": {
+      "post": {
+        "tags": ["Bulk Operations"],
+        "summary": "Bulk update task status",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "task_ids": { "type": "array", "items": { "type": "integer" }, "maxItems": 100 },
+                  "status": { "type": "string", "enum": ["pending", "in_progress", "completed", "cancelled"] }
+                },
+                "required": ["task_ids", "status"]
+              }
+            }
+          }
+        },
+        "responses": {
+          "202": {
+            "description": "Bulk update queued"
+          }
+        }
+      }
+    },
+    "/exports/tasks/csv": {
+      "post": {
+        "tags": ["Exports"],
+        "summary": "Queue CSV export",
+        "responses": {
+          "202": {
+            "description": "CSV export queued"
+          }
+        }
+      }
+    },
+    "/exports/tasks/pdf": {
+      "post": {
+        "tags": ["Exports"],
+        "summary": "Queue PDF export",
+        "responses": {
+          "202": {
+            "description": "PDF export queued"
+          }
+        }
+      }
+    },
+    "/exports/tasks/csv/download": {
+      "get": {
+        "tags": ["Exports"],
+        "summary": "Download CSV export",
+        "responses": {
+          "200": {
+            "description": "CSV file download"
+          }
+        }
+      }
+    },
+    "/exports/tasks/pdf/download": {
+      "get": {
+        "tags": ["Exports"],
+        "summary": "Download PDF export",
+        "responses": {
+          "200": {
+            "description": "PDF file download"
+          }
+        }
+      }
+    }
+  }
+}
