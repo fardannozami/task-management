@@ -13,6 +13,7 @@ import {
 } from '@/app/lib/definitions'
 import TaskForm from '@/app/ui/task-form'
 import TaskDetail from '@/app/ui/task-detail'
+import { useToast } from '@/app/ui/toast'
 
 const statusStyles: Record<TaskStatus, string> = {
   pending: 'bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-400',
@@ -118,13 +119,13 @@ export default function TaskDashboard({
   const router = useRouter()
   const pathname = usePathname()
   const searchParams = useSearchParams()
+  const { success, error } = useToast()
 
   const [search, setSearch] = useState(initialSearch)
   const [prevSearch, setPrevSearch] = useState(initialSearch)
   const [modal, setModal] = useState<{ mode: 'create' | 'edit'; task?: Task } | null>(null)
   const [detailTask, setDetailTask] = useState<Task | null>(null)
   const [taskToDelete, setTaskToDelete] = useState<Task | null>(null)
-  const [deleteError, setDeleteError] = useState<string | null>(null)
   const [isDeleting, startTransition] = useTransition()
   const searchTimeout = useRef<ReturnType<typeof setTimeout>>(null)
 
@@ -166,13 +167,13 @@ export default function TaskDashboard({
 
   function handleDelete() {
     if (!taskToDelete) return
-    setDeleteError(null)
     startTransition(async () => {
       const result = await deleteTaskAction(taskToDelete.id)
       if (result?.message) {
-        setDeleteError(result.message)
+        error(result.message)
       } else {
         setTaskToDelete(null)
+        success('Task deleted.')
       }
     })
   }
@@ -460,12 +461,6 @@ export default function TaskDashboard({
               <span className="font-medium text-black dark:text-zinc-50">&quot;{taskToDelete.title}&quot;</span>?
               This action cannot be undone.
             </p>
-
-            {deleteError && (
-              <div className="mt-3 rounded-lg bg-red-50 p-3 text-sm text-red-800 dark:bg-red-900/20 dark:text-red-400">
-                {deleteError}
-              </div>
-            )}
 
             <div className="mt-5 flex justify-end gap-3">
               <button

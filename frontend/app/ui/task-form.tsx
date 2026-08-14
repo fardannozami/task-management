@@ -8,6 +8,7 @@ import {
   taskStatuses,
   type Task,
 } from '@/app/lib/definitions'
+import { useToast } from '@/app/ui/toast'
 
 const initialState: TaskFormState = {
   errors: {},
@@ -42,12 +43,14 @@ export default function TaskForm({
       : createTaskAction
 
   const [state, formAction, isPending] = useActionState<TaskFormState, FormData>(action, initialState)
+  const { success } = useToast()
 
   useEffect(() => {
     if (state?.success) {
+      success(mode === 'create' ? 'Task created.' : 'Task updated.')
       onClose()
     }
-  }, [state, onClose])
+  }, [state, mode, success, onClose])
 
   return (
     <div
@@ -74,13 +77,11 @@ export default function TaskForm({
           </button>
         </div>
 
-        {state?.message && !state.success && (
+                {state?.message && !state.success && (
           <div className="mb-4 rounded-lg bg-red-50 p-3 text-sm text-red-800 dark:bg-red-900/20 dark:text-red-400">
             {state.message}
           </div>
-        )}
-
-        <form action={formAction} className="space-y-4">
+        )}<form action={formAction} className="space-y-4">
           <div>
             <label htmlFor="title" className={labelClass}>
               Title

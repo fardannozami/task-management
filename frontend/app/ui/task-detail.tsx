@@ -15,6 +15,7 @@ import {
 import { uploadFileWithProgress } from '@/app/lib/upload'
 import AttachmentDropzone from '@/app/ui/attachment-dropzone'
 import CommentSection from '@/app/ui/comment-section'
+import { useToast } from '@/app/ui/toast'
 
 const ALLOWED_EXTENSIONS = [
   'jpg', 'jpeg', 'png', 'gif', 'webp',
@@ -127,10 +128,10 @@ export default function TaskDetail({
   const [loadError, setLoadError] = useState<string | null>(null)
   const [uploads, setUploads] = useState<UploadItem[]>([])
   const [deletingId, setDeletingId] = useState<number | null>(null)
-  const [actionError, setActionError] = useState<string | null>(null)
   const [scanningId, setScanningId] = useState<number | null>(null)
   const [playingId, setPlayingId] = useState<number | null>(null)
   const mountedRef = useRef(true)
+  const { success, error } = useToast()
 
   useEffect(() => {
     mountedRef.current = true
@@ -175,6 +176,8 @@ export default function TaskDetail({
       percent: 0,
     }))
     setUploads((prev) => [...prev, ...items])
+
+    let uploadedCount = 0
 
     for (let i = 0; i < files.length; i++) {
       const file = files[i]
@@ -221,7 +224,12 @@ export default function TaskDetail({
       } else {
         setUploads((prev) => prev.filter((u) => u.key !== item.key))
         setAttachments((prev) => [...(prev ?? []), result.attachment!])
+        uploadedCount++
       }
+    }
+
+    if (uploadedCount > 0) {
+      success(`${uploadedCount} ${uploadedCount === 1 ? 'file' : 'files'} uploaded.`)
     }
 
     onChanged()
@@ -229,33 +237,45 @@ export default function TaskDetail({
 
   async function handleDelete(attachment: TaskAttachment) {
     setDeletingId(attachment.id)
-    setActionError(null)
     const result = await deleteAttachmentAction(attachment.id)
     if (!mountedRef.current) return
     setDeletingId(null)
 
     if (result.error) {
-      setActionError(result.error)
+      error(result.error)
       return
     }
 
     setAttachments((prev) => (prev ?? []).filter((a) => a.id !== attachment.id))
+    success('Attachment deleted.')
     onChanged()
   }
 
   async function handleScan(attachment: TaskAttachment) {
     setScanningId(attachment.id)
-    setActionError(null)
     const result = await scanAttachmentAction(attachment.id)
     if (!mountedRef.current) return
     setScanningId(null)
 
     if (result.error || !result.result) {
-      setActionError(result.error ?? 'Scan failed.')
+      error(result.error ?? 'Scan failed.')
       return
     }
 
     updateAttachment({ ...attachment, virus_scan_result: result.result })
+
+    const status = result.result.status
+    const label =
+      status === 'clean'
+        ? 'Clean'
+        : status === 'suspicious'
+          ? 'Suspicious'
+          : status === 'infected'
+            ? result.result.action_taken === 'quarantined'
+              ? 'Quarantined'
+              : 'Infected'
+            : 'Pending'
+    success(`Scan complete: ${label}.`)
   }
 
   const attachmentCount = useMemo(() => attachments?.length ?? 0, [attachments])
@@ -322,12 +342,6 @@ export default function TaskDetail({
             {loadError && (
               <div className="mb-3 rounded-lg bg-red-50 p-3 text-sm text-red-800 dark:bg-red-900/20 dark:text-red-400">
                 {loadError}
-              </div>
-            )}
-
-            {actionError && (
-              <div className="mb-3 rounded-lg bg-red-50 p-3 text-sm text-red-800 dark:bg-red-900/20 dark:text-red-400">
-                {actionError}
               </div>
             )}
 

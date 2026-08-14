@@ -51,6 +51,16 @@ Click any task (eyeball icon) to open its detail view. There you can drag & drop
 - Existing attachments show name, size, upload date, an image thumbnail when available, and a virus-scan badge.
 - Actions per file: play (video), download, run a scan, or delete.
 
+## Notifications
+
+User actions show toast notifications (top-right, auto-dismissing after 4s, dismissible):
+
+- Task created / updated / deleted
+- Attachment uploaded / deleted, and virus-scan results
+- Comment posted / deleted
+
+Toasts are rendered by `app/ui/toast.tsx` (`ToastProvider` mounted in the root layout + `useToast()` hook) with success / error / info variants and an `aria-live` region for screen readers.
+
 ## Video Upload & Streaming
 
 Video files (mp4/mov/avi, up to 50MB) are highlighted with a film icon and a play button in the task detail view. Clicking play opens an inline `<video>` player that streams through `app/api/attachments/[id]/stream`.

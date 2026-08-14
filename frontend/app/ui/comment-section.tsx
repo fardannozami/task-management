@@ -4,6 +4,7 @@ import { useEffect, useRef, useState, type FormEvent } from 'react'
 import type Pusher from 'pusher-js'
 import { createCommentAction, deleteCommentAction } from '@/app/actions/comments'
 import { type TaskComment, type TaskUser } from '@/app/lib/definitions'
+import { useToast } from '@/app/ui/toast'
 
 type CommentEvent = {
   id: number
@@ -43,6 +44,7 @@ export default function CommentSection({
   const [error, setError] = useState<string | null>(null)
   const [deletingId, setDeletingId] = useState<number | null>(null)
   const pusherRef = useRef<Pusher | null>(null)
+  const { success, error: toastError } = useToast()
 
   useEffect(() => {
     let disposed = false
@@ -113,6 +115,7 @@ export default function CommentSection({
         ? prev
         : [...prev, result.comment!]
     )
+    success('Comment posted.')
   }
 
   async function handleDelete(comment: TaskComment) {
@@ -123,11 +126,12 @@ export default function CommentSection({
 
     setDeletingId(null)
     if (result.error) {
-      setError(result.error)
+      toastError(result.error)
       return
     }
 
     setComments((prev) => prev.filter((c) => c.id !== comment.id))
+    success('Comment deleted.')
   }
 
   const canDelete = (comment: TaskComment) =>

@@ -19,6 +19,7 @@ The frontend talks to the backend over a JWT-authenticated REST API. Task CRUD o
 - Task CRUD with filtering, sorting, and pagination
 - Role-based access control (user / manager / admin)
 - **Real-time updates** via WebSockets (task created/updated/deleted)
+- **Toast notifications** for user feedback (task/attachment/comment actions, scan results)
 - **Real-time task comments** — per-task live comments with instant create/delete across clients
 - **Drag & drop file attachments** (images, documents, videos up to 50MB) with per-file status and live upload progress bars
 - **Video upload & streaming** — seekable playback through HTTP Range requests (206 partial content)
