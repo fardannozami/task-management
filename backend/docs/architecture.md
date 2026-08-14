@@ -110,9 +110,9 @@
 - Additional queue job for async processing
 - Requires GD extension
 
-## ADR-010: Laravel 11 Architecture
+## ADR-010: Laravel 13 Architecture
 
-**Decision:** Use Laravel 11 with new bootstrap/app.php configuration style.
+**Decision:** Use Laravel 13 with new bootstrap/app.php configuration style.
 
 **Context:** Modern Laravel features and simplified structure.
 
