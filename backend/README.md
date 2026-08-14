@@ -1,6 +1,6 @@
 # Task Management System - Backend API
 
-A Laravel 11 backend API for task management with advanced file handling, queue-based processing, and security features.
+A Laravel 13 backend API for task management with advanced file handling, queue-based processing, and security features.
 
 ## Features
 
@@ -27,8 +27,8 @@ A Laravel 11 backend API for task management with advanced file handling, queue-
 
 ## Tech Stack
 
-- **Framework**: Laravel 11
-- **PHP**: 8.2+
+- **Framework**: Laravel 13
+- **PHP**: 8.3+
 - **Database**: MySQL
 - **Authentication**: JWT (tymon/jwt-auth)
 - **Queue**: Database driver
@@ -38,7 +38,7 @@ A Laravel 11 backend API for task management with advanced file handling, queue-
 
 ## Prerequisites
 
-- PHP 8.2 or higher
+- PHP 8.3 or higher
 - Composer
 - MySQL 5.7+ or MariaDB 10.3+
 - Node.js & npm (for frontend, optional)
