@@ -47,7 +47,7 @@ The task detail view includes a comments section that updates live. Each comment
 Click any task (eyeball icon) to open its detail view. There you can drag & drop files (or click to browse) to attach them to the task:
 
 - Supports images, documents (pdf/doc/docx/xls/xlsx/txt), and videos up to 50MB per file.
-- Multiple files upload in parallel with per-file status (uploading / error).
+- Multiple files upload in parallel with per-file status (uploading / error) and a live **progress bar** showing the percentage uploaded in real time.
 - Existing attachments show name, size, upload date, an image thumbnail when available, and a virus-scan badge.
 - Actions per file: play (video), download, run a scan, or delete.
 
@@ -57,7 +57,7 @@ Video files (mp4/mov/avi, up to 50MB) are highlighted with a film icon and a pla
 
 Streaming uses HTTP Range requests: the backend serves partial content (206 responses with `Content-Range`), so the player can seek/scrub without downloading the whole file. The Next.js route handler forwards the browser's `Range`/`If-Range` headers upstream and relays the partial body back, keeping the JWT server-side.
 
-File bytes travel through server actions (`app/actions/attachments.ts`), which attach the session JWT server-side, so the token never reaches the browser. Downloads/thumbnails are streamed through `app/api/attachments/[id]/download` and `app/api/attachments/[id]/thumbnail` route handlers. Thumbnails and background scans are processed by the backend queue worker (`php artisan queue:work`).
+File bytes travel through `app/api/tasks/[id]/attachments` (a streaming proxy route that forwards the multipart request to the backend), which attach the session JWT server-side, so the token never reaches the browser. Uploads use `XMLHttpRequest` (`app/lib/upload.ts`) so the browser can report real upload progress as the bytes leave the client. Downloads/thumbnails are streamed through `app/api/attachments/[id]/download` and `app/api/attachments/[id]/thumbnail` route handlers. Thumbnails and background scans are processed by the backend queue worker (`php artisan queue:work`).
 
 
 ## Learn More

@@ -2,7 +2,7 @@
 
 import { revalidatePath } from 'next/cache'
 import { getSessionToken } from '@/app/lib/session'
-import { type Task, type TaskAttachment, type VirusScanResult } from '@/app/lib/definitions'
+import { type Task, type VirusScanResult } from '@/app/lib/definitions'
 
 const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:8000/api'
 
@@ -32,34 +32,6 @@ export async function fetchTaskDetailAction(
     }
 
     return { task: await response.json() }
-  } catch {
-    return { error: 'Network error. Please try again.' }
-  }
-}
-
-export async function uploadAttachmentAction(
-  taskId: number,
-  formData: FormData
-): Promise<{ attachment?: TaskAttachment; error?: string }> {
-  try {
-    const token = await getToken()
-    const response = await fetch(`${BACKEND_URL}/tasks/${taskId}/attachments`, {
-      method: 'POST',
-      headers: {
-        'Accept': 'application/json',
-        'Authorization': `Bearer ${token}`,
-      },
-      body: formData,
-      cache: 'no-store',
-    })
-
-    if (!response.ok) {
-      const error = await response.json().catch(() => null)
-      return { error: error?.message || 'Upload failed.' }
-    }
-
-    revalidatePath('/dashboard')
-    return { attachment: await response.json() }
   } catch {
     return { error: 'Network error. Please try again.' }
   }

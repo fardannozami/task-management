@@ -5,7 +5,6 @@ import {
   deleteAttachmentAction,
   fetchTaskDetailAction,
   scanAttachmentAction,
-  uploadAttachmentAction,
 } from '@/app/actions/attachments'
 import {
   type Task,
@@ -13,6 +12,7 @@ import {
   type TaskComment,
   type VirusScanResult,
 } from '@/app/lib/definitions'
+import { uploadFileWithProgress } from '@/app/lib/upload'
 import AttachmentDropzone from '@/app/ui/attachment-dropzone'
 import CommentSection from '@/app/ui/comment-section'
 
@@ -29,6 +29,7 @@ type UploadItem = {
   name: string
   size: number
   status: 'uploading' | 'error'
+  percent: number
   error?: string
 }
 
@@ -171,6 +172,7 @@ export default function TaskDetail({
       name: file.name,
       size: file.size,
       status: 'uploading',
+      percent: 0,
     }))
     setUploads((prev) => [...prev, ...items])
 
@@ -201,10 +203,12 @@ export default function TaskDetail({
         continue
       }
 
-      const formData = new FormData()
-      formData.append('file', file)
-
-      const result = await uploadAttachmentAction(task.id, formData)
+      const result = await uploadFileWithProgress(task.id, file, (percent) => {
+        if (!mountedRef.current) return
+        setUploads((prev) =>
+          prev.map((u) => (u.key === item.key ? { ...u, percent } : u))
+        )
+      })
 
       if (!mountedRef.current) return
 
@@ -356,8 +360,22 @@ export default function TaskDetail({
                     )}
                     <div className="min-w-0 flex-1">
                       <p className="truncate font-medium text-black dark:text-zinc-50">{item.name}</p>
-                      {item.status === 'error' && item.error && (
-                        <p className="truncate text-xs text-red-600 dark:text-red-400">{item.error}</p>
+                      {item.status === 'uploading' ? (
+                        <div className="mt-1.5 flex items-center gap-2">
+                          <div className="h-1.5 flex-1 overflow-hidden rounded-full bg-zinc-200 dark:bg-zinc-700">
+                            <div
+                              className="h-full rounded-full bg-zinc-900 transition-[width] duration-150 dark:bg-zinc-100"
+                              style={{ width: `${item.percent}%` }}
+                            />
+                          </div>
+                          <span className="w-9 shrink-0 text-right text-xs tabular-nums text-zinc-400">
+                            {item.percent}%
+                          </span>
+                        </div>
+                      ) : (
+                        item.error && (
+                          <p className="truncate text-xs text-red-600 dark:text-red-400">{item.error}</p>
+                        )
                       )}
                     </div>
                     <span className="shrink-0 text-xs text-zinc-400">

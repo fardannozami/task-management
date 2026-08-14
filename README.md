@@ -20,7 +20,7 @@ The frontend talks to the backend over a JWT-authenticated REST API. Task CRUD o
 - Role-based access control (user / manager / admin)
 - **Real-time updates** via WebSockets (task created/updated/deleted)
 - **Real-time task comments** — per-task live comments with instant create/delete across clients
-- **Drag & drop file attachments** (images, documents, videos up to 50MB) with per-file upload status
+- **Drag & drop file attachments** (images, documents, videos up to 50MB) with per-file status and live upload progress bars
 - **Video upload & streaming** — seekable playback through HTTP Range requests (206 partial content)
 - Image thumbnails and background virus scanning (queue-based)
 - Quarantine system for infected files
@@ -167,7 +167,8 @@ Reverb must be running (`php artisan reverb:start`) for real-time updates to wor
 ## File Uploads & Video Streaming
 
 - Upload via drag & drop in the task detail view. Supported types: jpg/png/gif/webp, pdf/doc/docx/xls/xlsx/txt, mp4/mov/avi — up to 50MB per file.
-- Files are stored privately; every byte flows through the backend (server actions / route handlers), so the JWT never reaches the browser.
+- Files are stored privately; every byte flows through the backend (a streaming upload proxy / route handlers), so the JWT never reaches the browser.
+- Uploads show a live progress bar driven by `XMLHttpRequest` upload events.
 - Videos stream inline with an HTTP Range–aware endpoint (`GET /api/attachments/{attachment}/stream`), enabling seekable playback without downloading the whole file.
 - Image thumbnails and virus scans run on the queue worker; infected files are quarantined.
 
