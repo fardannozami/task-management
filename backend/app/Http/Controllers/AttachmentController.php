@@ -7,6 +7,8 @@ use App\Models\Task;
 use App\Models\TaskAttachment;
 use App\Services\AttachmentService;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Support\Facades\Storage;
+use Symfony\Component\HttpFoundation\BinaryFileResponse;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class AttachmentController extends Controller
@@ -28,6 +30,23 @@ class AttachmentController extends Controller
     public function downloadThumbnail(TaskAttachment $attachment): StreamedResponse
     {
         return $this->attachments->downloadThumbnail($attachment);
+    }
+
+    public function stream(TaskAttachment $attachment): BinaryFileResponse
+    {
+        if ($this->attachments->isInfected($attachment)) {
+            abort(403, 'File is quarantined due to security concerns.');
+        }
+
+        $disk = Storage::disk('attachments');
+
+        if (!$disk->exists($attachment->file_path)) {
+            abort(404, 'File not found');
+        }
+
+        return response()->file($disk->path($attachment->file_path), [
+            'Content-Type' => $attachment->mime_type,
+        ]);
     }
 
     public function destroy(TaskAttachment $attachment): JsonResponse

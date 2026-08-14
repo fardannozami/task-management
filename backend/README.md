@@ -7,6 +7,7 @@ A Laravel 13 backend API for task management with advanced file handling, queue-
 - JWT Authentication
 - Task CRUD with filtering, sorting, and pagination
 - Secure file uploads with validation, thumbnails, and virus scanning
+- HTTP Range video streaming (`GET /api/attachments/{attachment}/stream` serves 206 Partial Content with `Content-Range`, enabling seekable playback)
 - Drag-and-drop file attachments (frontend interface, multiple files, per-file status)
 - File versioning system
 - Chunked uploads for large files (>50MB)

@@ -64,6 +64,18 @@ function extensionOf(name: string): string {
   return ext || 'file'
 }
 
+function isVideoMime(mime: string | null | undefined): boolean {
+  return typeof mime === 'string' && mime.startsWith('video/')
+}
+
+function VideoIcon() {
+  return (
+    <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+      <path strokeLinecap="round" strokeLinejoin="round" d="M3.375 19.5h17.25m-17.25 0a1.125 1.125 0 01-1.125-1.125M3.375 19.5h1.5C5.496 19.5 6 18.996 6 18.375m-3.75 0V5.625m0 12.75v-1.5c0-.621.504-1.125 1.125-1.125m18.375 2.625V5.625m0 12.75c0 .621-.504 1.125-1.125 1.125m1.125-1.125v-1.5c0-.621-.504-1.125-1.125-1.125m0 3.75h-1.5A1.125 1.125 0 0118 18.375M20.625 4.5H3.375m17.25 0c.621 0 1.125.504 1.125 1.125M20.625 4.5h-1.5C18.504 4.5 18 5.004 18 5.625m3.75 0v1.5c0 .621-.504 1.125-1.125 1.125M3.375 4.5c-.621 0-1.125.504-1.125 1.125M3.375 4.5h1.5C5.496 4.5 6 5.004 6 5.625m-3.75 0v1.5c0 .621.504 1.125 1.125 1.125m0 0h1.5m-1.5 0c-.621 0-1.125.504-1.125 1.125v1.5c0 .621.504 1.125 1.125 1.125m1.5-3.75C5.496 8.25 6 7.746 6 7.125v-1.5C6 5.004 5.496 4.5 5.25 4.5m1.5 8.25H18m-12.75 0a1.125 1.125 0 01-1.125 1.125H3.375M18 12.75V7.125c0-.621.504-1.125 1.125-1.125h1.5" />
+    </svg>
+  )
+}
+
 function Badge({ className, children }: { className: string; children: ReactNode }) {
   return (
     <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${className}`}>
@@ -109,6 +121,7 @@ export default function TaskDetail({
   const [deletingId, setDeletingId] = useState<number | null>(null)
   const [actionError, setActionError] = useState<string | null>(null)
   const [scanningId, setScanningId] = useState<number | null>(null)
+  const [playingId, setPlayingId] = useState<number | null>(null)
   const mountedRef = useRef(true)
 
   useEffect(() => {
@@ -353,71 +366,113 @@ export default function TaskDetail({
               <p className="mt-4 text-sm text-zinc-400">No attachments yet.</p>
             ) : (
               <ul className="mt-3 divide-y divide-zinc-200 dark:divide-zinc-800">
-                {attachments!.map((attachment) => (
-                  <li key={attachment.id} className="flex items-center gap-3 py-3">
-                    {attachment.thumbnail_path ? (
-                      <img
-                        src={`/api/attachments/${attachment.id}/thumbnail`}
-                        alt={attachment.file_name}
-                        className="h-10 w-10 shrink-0 rounded object-cover"
-                      />
-                    ) : (
-                      <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded bg-zinc-100 text-[10px] font-semibold uppercase text-zinc-500 dark:bg-zinc-800 dark:text-zinc-400">
-                        {extensionOf(attachment.file_name).slice(0, 4)}
-                      </span>
-                    )}
-
-                    <div className="min-w-0 flex-1">
-                      <p className="truncate font-medium text-black dark:text-zinc-50">{attachment.file_name}</p>
-                      <p className="text-xs text-zinc-500 dark:text-zinc-400">
-                        {formatBytes(attachment.file_size)} · {formatDate(attachment.uploaded_at)}
-                      </p>
-                    </div>
-
-                    <ScanBadge result={attachment.virus_scan_result} />
-
-                    <div className="flex shrink-0 items-center gap-1">
-                      <a
-                        href={`/api/attachments/${attachment.id}/download`}
-                        aria-label={`Download ${attachment.file_name}`}
-                        className="rounded-lg p-2 text-zinc-500 transition-colors hover:bg-zinc-100 hover:text-black dark:hover:bg-zinc-800 dark:hover:text-zinc-50"
-                      >
-                        <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                          <path strokeLinecap="round" strokeLinejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5M16.5 12L12 16.5m0 0L7.5 12m4.5 4.5V3" />
-                        </svg>
-                      </a>
-                      <button
-                        type="button"
-                        disabled={scanningId === attachment.id}
-                        onClick={() => handleScan(attachment)}
-                        aria-label={`Scan ${attachment.file_name}`}
-                        className="rounded-lg p-2 text-zinc-500 transition-colors hover:bg-zinc-100 hover:text-black disabled:opacity-40 dark:hover:bg-zinc-800 dark:hover:text-zinc-50"
-                      >
-                        {scanningId === attachment.id ? (
-                          <svg className="h-4 w-4 animate-spin" viewBox="0 0 24 24" fill="none">
-                            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
-                          </svg>
+                {attachments!.map((attachment) => {
+                  const isVideo = isVideoMime(attachment.mime_type)
+                  const isPlaying = playingId === attachment.id
+                  return (
+                    <li key={attachment.id}>
+                      <div className="flex items-center gap-3 py-3">
+                        {attachment.thumbnail_path ? (
+                          <img
+                            src={`/api/attachments/${attachment.id}/thumbnail`}
+                            alt={attachment.file_name}
+                            className="h-10 w-10 shrink-0 rounded object-cover"
+                          />
                         ) : (
-                          <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                            <path strokeLinecap="round" strokeLinejoin="round" d="M9 12.75L11.25 15 15 9.75m-3-7.036A11.959 11.959 0 013.598 6 11.99 11.99 0 003 9.749c0 5.592 3.824 10.29 9 11.623 5.176-1.332 9-6.03 9-11.622 0-1.31-.21-2.571-.598-3.751h-.152c-3.196 0-6.1-1.248-8.25-3.285z" />
-                          </svg>
+                          <span
+                            className={`flex h-10 w-10 shrink-0 items-center justify-center rounded ${
+                              isVideo
+                                ? 'bg-zinc-900 text-zinc-200 dark:bg-zinc-700 dark:text-zinc-300'
+                                : 'bg-zinc-100 text-zinc-500 dark:bg-zinc-800 dark:text-zinc-400'
+                            }`}
+                          >
+                            {isVideo ? (
+                              <VideoIcon />
+                            ) : (
+                              extensionOf(attachment.file_name).slice(0, 4)
+                            )}
+                          </span>
                         )}
-                      </button>
-                      <button
-                        type="button"
-                        disabled={busy}
-                        onClick={() => handleDelete(attachment)}
-                        aria-label={`Delete ${attachment.file_name}`}
-                        className="rounded-lg p-2 text-zinc-500 transition-colors hover:bg-red-50 hover:text-red-600 disabled:opacity-40 dark:hover:bg-red-900/20 dark:hover:text-red-400"
-                      >
-                        <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                          <path strokeLinecap="round" strokeLinejoin="round" d="M14.74 9l-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 01-2.244 2.077H8.084a2.25 2.25 0 01-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 00-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 013.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 00-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 00-7.5 0" />
-                        </svg>
-                      </button>
-                    </div>
-                  </li>
-                ))}
+
+                        <div className="min-w-0 flex-1">
+                          <p className="truncate font-medium text-black dark:text-zinc-50">{attachment.file_name}</p>
+                          <p className="text-xs text-zinc-500 dark:text-zinc-400">
+                            {formatBytes(attachment.file_size)} · {formatDate(attachment.uploaded_at)}
+                          </p>
+                        </div>
+
+                        <ScanBadge result={attachment.virus_scan_result} />
+
+                        <div className="flex shrink-0 items-center gap-1">
+                          {isVideo && (
+                            <button
+                              type="button"
+                              onClick={() => setPlayingId(isPlaying ? null : attachment.id)}
+                              aria-label={isPlaying ? `Stop playing ${attachment.file_name}` : `Play ${attachment.file_name}`}
+                              className="rounded-lg p-2 text-zinc-500 transition-colors hover:bg-zinc-100 hover:text-black dark:hover:bg-zinc-800 dark:hover:text-zinc-50"
+                            >
+                              <svg className="h-4 w-4" fill="currentColor" viewBox="0 0 24 24">
+                                {isPlaying ? (
+                                  <path d="M6 4.75A1.75 1.75 0 007.75 3h2.5A1.75 1.75 0 0012 4.75v14.5A1.75 1.75 0 0010.25 21h-2.5A1.75 1.75 0 006 19.25V4.75zm8 0A1.75 1.75 0 0115.75 3h2.5A1.75 1.75 0 0120 4.75v14.5a1.75 1.75 0 01-1.75 1.75h-2.5A1.75 1.75 0 0114 19.25V4.75z" />
+                                ) : (
+                                  <path d="M8 5.14v14.72a1 1 0 001.5.86l11.6-7.36a1 1 0 000-1.72L9.5 4.28A1 1 0 008 5.14z" />
+                                )}
+                              </svg>
+                            </button>
+                          )}
+                          <a
+                            href={`/api/attachments/${attachment.id}/download`}
+                            aria-label={`Download ${attachment.file_name}`}
+                            className="rounded-lg p-2 text-zinc-500 transition-colors hover:bg-zinc-100 hover:text-black dark:hover:bg-zinc-800 dark:hover:text-zinc-50"
+                          >
+                            <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                              <path strokeLinecap="round" strokeLinejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5M16.5 12L12 16.5m0 0L7.5 12m4.5 4.5V3" />
+                            </svg>
+                          </a>
+                          <button
+                            type="button"
+                            disabled={scanningId === attachment.id}
+                            onClick={() => handleScan(attachment)}
+                            aria-label={`Scan ${attachment.file_name}`}
+                            className="rounded-lg p-2 text-zinc-500 transition-colors hover:bg-zinc-100 hover:text-black disabled:opacity-40 dark:hover:bg-zinc-800 dark:hover:text-zinc-50"
+                          >
+                            {scanningId === attachment.id ? (
+                              <svg className="h-4 w-4 animate-spin" viewBox="0 0 24 24" fill="none">
+                                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+                              </svg>
+                            ) : (
+                              <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                                <path strokeLinecap="round" strokeLinejoin="round" d="M9 12.75L11.25 15 15 9.75m-3-7.036A11.959 11.959 0 013.598 6 11.99 11.99 0 003 9.749c0 5.592 3.824 10.29 9 11.623 5.176-1.332 9-6.03 9-11.622 0-1.31-.21-2.571-.598-3.751h-.152c-3.196 0-6.1-1.248-8.25-3.285z" />
+                              </svg>
+                            )}
+                          </button>
+                          <button
+                            type="button"
+                            disabled={busy}
+                            onClick={() => handleDelete(attachment)}
+                            aria-label={`Delete ${attachment.file_name}`}
+                            className="rounded-lg p-2 text-zinc-500 transition-colors hover:bg-red-50 hover:text-red-600 disabled:opacity-40 dark:hover:bg-red-900/20 dark:hover:text-red-400"
+                          >
+                            <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                              <path strokeLinecap="round" strokeLinejoin="round" d="M14.74 9l-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 01-2.244 2.077H8.084a2.25 2.25 0 01-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 00-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 013.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 00-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 00-7.5 0" />
+                            </svg>
+                          </button>
+                        </div>
+                      </div>
+                      {isPlaying && (
+                        <div className="pb-3">
+                          <video
+                            controls
+                            preload="metadata"
+                            src={`/api/attachments/${attachment.id}/stream`}
+                            className="aspect-video w-full rounded-lg bg-black"
+                          />
+                        </div>
+                      )}
+                    </li>
+                  )
+                })}
               </ul>
             )}
           </section>

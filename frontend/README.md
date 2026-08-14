@@ -45,7 +45,13 @@ Click any task (eyeball icon) to open its detail view. There you can drag & drop
 - Supports images, documents (pdf/doc/docx/xls/xlsx/txt), and videos up to 50MB per file.
 - Multiple files upload in parallel with per-file status (uploading / error).
 - Existing attachments show name, size, upload date, an image thumbnail when available, and a virus-scan badge.
-- Actions per file: download, run a scan, or delete.
+- Actions per file: play (video), download, run a scan, or delete.
+
+## Video Upload & Streaming
+
+Video files (mp4/mov/avi, up to 50MB) are highlighted with a film icon and a play button in the task detail view. Clicking play opens an inline `<video>` player that streams through `app/api/attachments/[id]/stream`.
+
+Streaming uses HTTP Range requests: the backend serves partial content (206 responses with `Content-Range`), so the player can seek/scrub without downloading the whole file. The Next.js route handler forwards the browser's `Range`/`If-Range` headers upstream and relays the partial body back, keeping the JWT server-side.
 
 File bytes travel through server actions (`app/actions/attachments.ts`), which attach the session JWT server-side, so the token never reaches the browser. Downloads/thumbnails are streamed through `app/api/attachments/[id]/download` and `app/api/attachments/[id]/thumbnail` route handlers. Thumbnails and background scans are processed by the backend queue worker (`php artisan queue:work`).
 
