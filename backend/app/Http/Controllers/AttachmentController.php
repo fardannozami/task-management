@@ -32,7 +32,7 @@ class AttachmentController extends Controller
         return $this->attachments->downloadThumbnail($attachment);
     }
 
-    public function stream(TaskAttachment $attachment): BinaryFileResponse
+    public function stream(TaskAttachment $attachment): StreamedResponse|BinaryFileResponse
     {
         if ($this->attachments->isInfected($attachment)) {
             abort(403, 'File is quarantined due to security concerns.');
@@ -44,8 +44,20 @@ class AttachmentController extends Controller
             abort(404, 'File not found');
         }
 
-        return response()->file($disk->path($attachment->file_path), [
-            'Content-Type' => $attachment->mime_type,
+        $path = $disk->path($attachment->file_path);
+        $detectedMime = (new \finfo(FILEINFO_MIME_TYPE))->file($path);
+
+        $inlineMimes = [
+            'image/jpeg', 'image/png', 'image/gif', 'image/webp',
+            'video/mp4', 'video/quicktime', 'video/x-msvideo',
+        ];
+
+        if (! in_array($detectedMime, $inlineMimes)) {
+            return $this->attachments->download($attachment);
+        }
+
+        return response()->file($path, [
+            'Content-Type' => $detectedMime,
         ]);
     }
 

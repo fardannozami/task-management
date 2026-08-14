@@ -16,6 +16,25 @@ class ChunkedUploadService
 
     private const MAX_CHUNK_SIZE = 5 * 1024 * 1024; // 5MB per chunk
 
+    private const MAX_FILE_SIZE_BYTES = 51200 * 1024; // 50MB
+
+    private const ALLOWED_EXTENSIONS = [
+        'jpg', 'jpeg', 'png', 'gif', 'webp',
+        'pdf', 'doc', 'docx', 'xls', 'xlsx', 'txt',
+        'mp4', 'mov', 'avi',
+    ];
+
+    private const ALLOWED_MIMES = [
+        'image/jpeg', 'image/png', 'image/gif', 'image/webp',
+        'application/pdf',
+        'application/msword',
+        'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+        'application/vnd.ms-excel',
+        'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+        'text/plain',
+        'video/mp4', 'video/quicktime', 'video/x-msvideo',
+    ];
+
     public function init(Task $task, string $fileName, int $totalSize, ?string $mimeType = null): ChunkedUpload
     {
         $chunkSize = self::MAX_CHUNK_SIZE;
@@ -67,7 +86,16 @@ class ChunkedUploadService
             abort(422, 'Not all chunks have been uploaded.');
         }
 
-        $extension = pathinfo($upload->original_file_name, PATHINFO_EXTENSION);
+        $extension = strtolower(pathinfo($upload->original_file_name, PATHINFO_EXTENSION));
+
+        if (! in_array($extension, self::ALLOWED_EXTENSIONS)) {
+            abort(422, 'Unsupported file extension: .'.$extension);
+        }
+
+        if ($upload->total_size > self::MAX_FILE_SIZE_BYTES) {
+            abort(422, 'File size exceeds maximum limit of 50MB.');
+        }
+
         $randomName = Str::random(40).'.'.$extension;
         $finalPath = $randomName;
 
@@ -83,12 +111,19 @@ class ChunkedUploadService
 
         fclose($targetStream);
 
+        $detectedMime = (new \finfo(FILEINFO_MIME_TYPE))->file($disk->path($finalPath));
+
+        if (! in_array($detectedMime, self::ALLOWED_MIMES)) {
+            $disk->delete($finalPath);
+            abort(422, 'Unsupported file content type detected.');
+        }
+
         $attachment = TaskAttachment::create([
             'task_id' => $upload->task_id,
             'file_name' => $this->sanitizeFileName($upload->original_file_name),
             'file_path' => $finalPath,
             'file_size' => $upload->total_size,
-            'mime_type' => $upload->mime_type ?? 'application/octet-stream',
+            'mime_type' => $detectedMime,
             'uploaded_at' => now(),
         ]);
 

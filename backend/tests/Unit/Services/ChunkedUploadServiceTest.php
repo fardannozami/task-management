@@ -32,10 +32,10 @@ class ChunkedUploadServiceTest extends TestCase
 
     public function test_it_can_initialize_chunked_upload(): void
     {
-        $upload = $this->service->init($this->task, 'largefile.bin', 10485760);
+        $upload = $this->service->init($this->task, 'largefile.mp4', 10485760);
 
         $this->assertInstanceOf(ChunkedUpload::class, $upload);
-        $this->assertEquals('largefile.bin', $upload->original_file_name);
+        $this->assertEquals('largefile.mp4', $upload->original_file_name);
         $this->assertEquals(10485760, $upload->total_size);
         $this->assertEquals('initiated', $upload->status);
         $this->assertNotNull($upload->temp_path);
@@ -43,7 +43,7 @@ class ChunkedUploadServiceTest extends TestCase
 
     public function test_it_can_upload_chunks(): void
     {
-        $upload = $this->service->init($this->task, 'largefile.bin', 10485760);
+        $upload = $this->service->init($this->task, 'largefile.mp4', 10485760);
 
         $chunk = UploadedFile::fake()->create('chunk.bin', 1024);
 
@@ -54,7 +54,7 @@ class ChunkedUploadServiceTest extends TestCase
 
     public function test_it_marks_ready_when_all_chunks_uploaded(): void
     {
-        $upload = $this->service->init($this->task, 'largefile.bin', 5242880); // 5MB
+        $upload = $this->service->init($this->task, 'largefile.mp4', 5242880); // 5MB
         $chunk = UploadedFile::fake()->create('chunk.bin', 5120); // 5MB
 
         $this->service->uploadChunk($upload, $chunk, 0);
@@ -64,7 +64,7 @@ class ChunkedUploadServiceTest extends TestCase
 
     public function test_it_can_cancel_upload(): void
     {
-        $upload = $this->service->init($this->task, 'largefile.bin', 10485760);
+        $upload = $this->service->init($this->task, 'largefile.mp4', 10485760);
 
         $this->service->cancel($upload);
 
@@ -74,9 +74,9 @@ class ChunkedUploadServiceTest extends TestCase
 
     public function test_it_cannot_cancel_completed_upload(): void
     {
-        $upload = $this->service->init($this->task, 'largefile.bin', 5242880);
-        $chunk = UploadedFile::fake()->create('chunk.bin', 5120);
-        $this->service->uploadChunk($upload, $chunk, 0);
+        $image = UploadedFile::fake()->image('photo.png');
+        $upload = $this->service->init($this->task, 'photo.png', $image->getSize());
+        $this->service->uploadChunk($upload, $image, 0);
         $this->service->merge($upload);
 
         $this->expectException(HttpException::class);

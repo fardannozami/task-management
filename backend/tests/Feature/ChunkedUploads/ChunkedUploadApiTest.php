@@ -30,8 +30,9 @@ class ChunkedUploadApiTest extends TestCase
     {
         $response = $this->withHeader('Authorization', 'Bearer '.$this->token)
             ->postJson("/api/chunked-uploads/tasks/{$this->task->id}/init", [
-                'file_name' => 'largefile.bin',
+                'file_name' => 'largefile.mp4',
                 'total_size' => 10485760,
+                'mime_type' => 'video/mp4',
             ]);
 
         $response->assertStatus(201)
@@ -49,7 +50,7 @@ class ChunkedUploadApiTest extends TestCase
     {
         $initResponse = $this->withHeader('Authorization', 'Bearer '.$this->token)
             ->postJson("/api/chunked-uploads/tasks/{$this->task->id}/init", [
-                'file_name' => 'largefile.bin',
+                'file_name' => 'largefile.mp4',
                 'total_size' => 10485760,
             ]);
 
@@ -69,17 +70,20 @@ class ChunkedUploadApiTest extends TestCase
 
     public function test_authenticated_user_can_merge_chunks(): void
     {
+        $image = UploadedFile::fake()->image('photo.png');
+
         $initResponse = $this->withHeader('Authorization', 'Bearer '.$this->token)
             ->postJson("/api/chunked-uploads/tasks/{$this->task->id}/init", [
-                'file_name' => 'largefile.bin',
-                'total_size' => 5242880,
+                'file_name' => 'photo.png',
+                'total_size' => $image->getSize(),
+                'mime_type' => 'image/png',
             ]);
 
         $uploadId = $initResponse->json('id');
 
         $this->withHeader('Authorization', 'Bearer '.$this->token)
             ->postJson("/api/chunked-uploads/{$uploadId}/chunk", [
-                'chunk' => UploadedFile::fake()->create('chunk.bin', 5120),
+                'chunk' => $image,
                 'chunk_index' => 0,
             ]);
 
@@ -92,6 +96,11 @@ class ChunkedUploadApiTest extends TestCase
                 'task_id',
                 'file_name',
                 'file_size',
+                'mime_type',
+            ])
+            ->assertJson([
+                'file_name' => 'photo.png',
+                'mime_type' => 'image/png',
             ]);
     }
 
@@ -99,7 +108,7 @@ class ChunkedUploadApiTest extends TestCase
     {
         $initResponse = $this->withHeader('Authorization', 'Bearer '.$this->token)
             ->postJson("/api/chunked-uploads/tasks/{$this->task->id}/init", [
-                'file_name' => 'largefile.bin',
+                'file_name' => 'largefile.mp4',
                 'total_size' => 10485760,
             ]);
 
@@ -109,5 +118,67 @@ class ChunkedUploadApiTest extends TestCase
             ->deleteJson("/api/chunked-uploads/{$uploadId}");
 
         $response->assertStatus(204);
+    }
+
+    public function test_init_rejects_unsupported_extension(): void
+    {
+        $response = $this->withHeader('Authorization', 'Bearer '.$this->token)
+            ->postJson("/api/chunked-uploads/tasks/{$this->task->id}/init", [
+                'file_name' => 'shell.php',
+                'total_size' => 1024,
+                'mime_type' => 'application/octet-stream',
+            ]);
+
+        $response->assertStatus(422)
+            ->assertJsonValidationErrors('file_name');
+    }
+
+    public function test_init_rejects_unsupported_mime_type(): void
+    {
+        $response = $this->withHeader('Authorization', 'Bearer '.$this->token)
+            ->postJson("/api/chunked-uploads/tasks/{$this->task->id}/init", [
+                'file_name' => 'image.svg',
+                'total_size' => 1024,
+                'mime_type' => 'image/svg+xml',
+            ]);
+
+        $response->assertStatus(422)
+            ->assertJsonValidationErrors('mime_type');
+    }
+
+    public function test_init_rejects_oversized_file(): void
+    {
+        $response = $this->withHeader('Authorization', 'Bearer '.$this->token)
+            ->postJson("/api/chunked-uploads/tasks/{$this->task->id}/init", [
+                'file_name' => 'largefile.mp4',
+                'total_size' => 51200 * 1024 + 1,
+            ]);
+
+        $response->assertStatus(422)
+            ->assertJsonValidationErrors('total_size');
+    }
+
+    public function test_merge_rejects_content_type_mismatch(): void
+    {
+        $initResponse = $this->withHeader('Authorization', 'Bearer '.$this->token)
+            ->postJson("/api/chunked-uploads/tasks/{$this->task->id}/init", [
+                'file_name' => 'photo.png',
+                'total_size' => 1024,
+                'mime_type' => 'image/png',
+            ]);
+
+        $uploadId = $initResponse->json('id');
+
+        $this->withHeader('Authorization', 'Bearer '.$this->token)
+            ->postJson("/api/chunked-uploads/{$uploadId}/chunk", [
+                'chunk' => UploadedFile::fake()->create('fake.bin', 1024),
+                'chunk_index' => 0,
+            ]);
+
+        $response = $this->withHeader('Authorization', 'Bearer '.$this->token)
+            ->postJson("/api/chunked-uploads/{$uploadId}/merge");
+
+        $response->assertStatus(422)
+            ->assertJsonPath('message', 'Unsupported file content type detected.');
     }
 }
