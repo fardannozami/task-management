@@ -20,6 +20,25 @@ You can start editing the page by modifying `app/page.tsx`. The page auto-update
 
 This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
 
+## Environment Variables
+
+Copy `.env.example` to `.env.local` and set:
+
+| Variable | Description |
+|----------|-------------|
+| `BACKEND_BASE` | Backend API base URL, e.g. `http://localhost:8000` |
+| `NEXT_PUBLIC_BACKEND_URL` | Public backend URL used by the client, e.g. `http://localhost:8000/api` |
+| `NEXT_PUBLIC_REVERB_APP_KEY` | Reverb public app key (`task-management-key`) |
+| `NEXT_PUBLIC_REVERB_HOST` | Reverb WebSocket host (`127.0.0.1`) |
+| `NEXT_PUBLIC_REVERB_PORT` | Reverb WebSocket port (`8080`) |
+
+## Real-time Updates
+
+The dashboard subscribes to the private `tasks` channel via [pusher-js](https://github.com/pusher/pusher-js) and refreshes automatically when tasks are created, updated, or deleted. Channel authorization is proxied through `app/api/broadcasting/auth/route.ts`, which forwards the session JWT to the backend's `POST /broadcasting/auth` endpoint.
+
+Requirements: the backend must be running (`php artisan serve`) together with Reverb (`php artisan reverb:start`).
+
+
 ## Learn More
 
 To learn more about Next.js, take a look at the following resources:

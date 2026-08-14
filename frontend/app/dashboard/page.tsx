@@ -5,6 +5,7 @@ import { fetchTasks, fetchUsers } from '@/app/actions/tasks'
 import { taskPriorities, taskStatuses, type TaskStatus } from '@/app/lib/definitions'
 import TaskDashboard from '@/app/ui/task-dashboard'
 import LogoutButton from '@/app/ui/logout-button'
+import RealtimeTasks from '@/app/ui/realtime-tasks'
 import { logoutAction } from '@/app/actions/auth'
 
 async function fetchTaskCount(status: TaskStatus, token: string): Promise<number> {
@@ -70,9 +71,12 @@ export default async function DashboardPage({
               Welcome back, {session.name}
             </p>
           </div>
-          <form action={logoutAction}>
-            <LogoutButton />
-          </form>
+          <div className="flex items-center gap-3">
+            <RealtimeTasks />
+            <form action={logoutAction}>
+              <LogoutButton />
+            </form>
+          </div>
         </div>
 
         <TaskDashboard
