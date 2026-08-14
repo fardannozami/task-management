@@ -1,10 +1,38 @@
 import { cookies } from 'next/headers'
 import { decryptSession } from '@/app/lib/session'
 import { redirect } from 'next/navigation'
+import { fetchTasks, fetchUsers } from '@/app/actions/tasks'
+import { taskPriorities, taskStatuses, type TaskStatus } from '@/app/lib/definitions'
+import TaskDashboard from '@/app/ui/task-dashboard'
 import LogoutButton from '@/app/ui/logout-button'
 import { logoutAction } from '@/app/actions/auth'
 
-export default async function DashboardPage() {
+async function fetchTaskCount(status: TaskStatus, token: string): Promise<number> {
+  try {
+    const response = await fetch(
+      `${process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:8000/api'}/tasks?status=${status}&per_page=1`,
+      {
+        headers: {
+          'Accept': 'application/json',
+          'Authorization': `Bearer ${token}`,
+        },
+        cache: 'no-store',
+      }
+    )
+
+    if (!response.ok) return 0
+    const data = await response.json()
+    return data.total ?? 0
+  } catch {
+    return 0
+  }
+}
+
+export default async function DashboardPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ [key: string]: string | string[] | undefined }>
+}) {
   const cookie = (await cookies()).get('session')?.value
   const session = await decryptSession(cookie)
 
@@ -12,62 +40,49 @@ export default async function DashboardPage() {
     redirect('/login')
   }
 
+  const params = await searchParams
+  const status = taskStatuses.find((s) => s === params.status) ?? ''
+  const priority = taskPriorities.find((p) => p === params.priority) ?? ''
+  const search = typeof params.search === 'string' ? params.search : ''
+  const page = Number(typeof params.page === 'string' && /^\d+$/.test(params.page) ? params.page : 1) || 1
+
+  const [tasks, users, stats] = await Promise.all([
+    fetchTasks({ status, priority, search, page, perPage: 10 }),
+    fetchUsers(),
+    Promise.all(
+      (taskStatuses as readonly TaskStatus[]).map((s) => fetchTaskCount(s, session.accessToken))
+    ),
+  ])
+
+  const counts = Object.fromEntries(
+    taskStatuses.map((s, i) => [s, stats[i]])
+  ) as Record<TaskStatus, number>
+
   return (
-    <div className="flex min-h-screen flex-col items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black">
-        <div className="w-full">
-          <div className="mb-8 flex items-center justify-between">
-            <div>
-              <h1 className="text-3xl font-semibold text-black dark:text-zinc-50">
-                Dashboard
-              </h1>
-              <p className="mt-2 text-zinc-600 dark:text-zinc-400">
-                Welcome back, {session.name}
-              </p>
-            </div>
-            <form action={logoutAction}>
-              <LogoutButton />
-            </form>
+    <div className="min-h-screen bg-zinc-50 font-sans dark:bg-black">
+      <main className="mx-auto w-full max-w-6xl px-4 py-6 sm:px-6 lg:px-8">
+        <div className="mb-6 flex flex-wrap items-center justify-between gap-4">
+          <div>
+            <h1 className="text-2xl font-semibold text-black sm:text-3xl dark:text-zinc-50">
+              Task Dashboard
+            </h1>
+            <p className="mt-1 text-sm text-zinc-600 dark:text-zinc-400">
+              Welcome back, {session.name}
+            </p>
           </div>
-
-          <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
-            <div className="rounded-lg border border-zinc-200 bg-white p-6 dark:border-zinc-800 dark:bg-zinc-900">
-              <h3 className="text-lg font-medium text-black dark:text-zinc-50">My Tasks</h3>
-              <p className="mt-2 text-3xl font-bold text-black dark:text-zinc-50">0</p>
-              <p className="mt-1 text-sm text-zinc-600 dark:text-zinc-400">Assigned to you</p>
-            </div>
-
-            <div className="rounded-lg border border-zinc-200 bg-white p-6 dark:border-zinc-800 dark:bg-zinc-900">
-              <h3 className="text-lg font-medium text-black dark:text-zinc-50">Pending</h3>
-              <p className="mt-2 text-3xl font-bold text-black dark:text-zinc-50">0</p>
-              <p className="mt-1 text-sm text-zinc-600 dark:text-zinc-400">Awaiting action</p>
-            </div>
-
-            <div className="rounded-lg border border-zinc-200 bg-white p-6 dark:border-zinc-800 dark:bg-zinc-900">
-              <h3 className="text-lg font-medium text-black dark:text-zinc-50">Completed</h3>
-              <p className="mt-2 text-3xl font-bold text-black dark:text-zinc-50">0</p>
-              <p className="mt-1 text-sm text-zinc-600 dark:text-zinc-400">This month</p>
-            </div>
-          </div>
-
-          <div className="mt-8 rounded-lg border border-zinc-200 bg-white p-6 dark:border-zinc-800 dark:bg-zinc-900">
-            <h3 className="text-lg font-medium text-black dark:text-zinc-50">Account Info</h3>
-            <dl className="mt-4 space-y-3">
-              <div className="flex justify-between">
-                <dt className="text-zinc-600 dark:text-zinc-400">Email</dt>
-                <dd className="text-black dark:text-zinc-50">{session.email}</dd>
-              </div>
-              <div className="flex justify-between">
-                <dt className="text-zinc-600 dark:text-zinc-400">Role</dt>
-                <dd className="text-black dark:text-zinc-50 capitalize">{session.role}</dd>
-              </div>
-              <div className="flex justify-between">
-                <dt className="text-zinc-600 dark:text-zinc-400">User ID</dt>
-                <dd className="text-black dark:text-zinc-50">{session.userId}</dd>
-              </div>
-            </dl>
-          </div>
+          <form action={logoutAction}>
+            <LogoutButton />
+          </form>
         </div>
+
+        <TaskDashboard
+          tasks={tasks}
+          users={users}
+          counts={counts}
+          initialStatus={status}
+          initialPriority={priority}
+          initialSearch={search}
+        />
       </main>
     </div>
   )
