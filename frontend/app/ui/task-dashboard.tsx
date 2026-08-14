@@ -103,6 +103,8 @@ export default function TaskDashboard({
   initialStatus,
   initialPriority,
   initialSearch,
+  currentUserId,
+  currentUserRole,
 }: {
   tasks: Paginated<Task>
   users: { id: number; name: string; email: string }[]
@@ -110,6 +112,8 @@ export default function TaskDashboard({
   initialStatus: TaskStatus | ''
   initialPriority: TaskPriority | ''
   initialSearch: string
+  currentUserId: number
+  currentUserRole: string
 }) {
   const router = useRouter()
   const pathname = usePathname()
@@ -434,6 +438,8 @@ export default function TaskDashboard({
       {detailTask && (
         <TaskDetail
           task={detailTask}
+          currentUserId={currentUserId}
+          currentUserRole={currentUserRole}
           onClose={() => setDetailTask(null)}
           onChanged={() => router.refresh()}
         />

@@ -10,9 +10,11 @@ import {
 import {
   type Task,
   type TaskAttachment,
+  type TaskComment,
   type VirusScanResult,
 } from '@/app/lib/definitions'
 import AttachmentDropzone from '@/app/ui/attachment-dropzone'
+import CommentSection from '@/app/ui/comment-section'
 
 const ALLOWED_EXTENSIONS = [
   'jpg', 'jpeg', 'png', 'gif', 'webp',
@@ -108,14 +110,19 @@ function ScanBadge({ result }: { result: VirusScanResult | null | undefined }) {
 
 export default function TaskDetail({
   task,
+  currentUserId,
+  currentUserRole,
   onClose,
   onChanged,
 }: {
   task: Task
+  currentUserId: number
+  currentUserRole: string
   onClose: () => void
   onChanged: () => void
 }) {
   const [attachments, setAttachments] = useState<TaskAttachment[] | null>(null)
+  const [comments, setComments] = useState<TaskComment[]>([])
   const [loadError, setLoadError] = useState<string | null>(null)
   const [uploads, setUploads] = useState<UploadItem[]>([])
   const [deletingId, setDeletingId] = useState<number | null>(null)
@@ -141,6 +148,7 @@ export default function TaskDetail({
         setLoadError(result.error ?? 'Failed to load task details.')
       } else {
         setAttachments(result.task.attachments ?? [])
+        setComments(result.task.comments ?? [])
       }
     }
 
@@ -476,6 +484,26 @@ export default function TaskDetail({
               </ul>
             )}
           </section>
+
+          {attachments !== null && (
+            <section className="mt-6">
+              <h3 className="mb-3 text-sm font-semibold text-black dark:text-zinc-50">
+                Comments
+                {comments.length > 0 && (
+                  <span className="ml-2 text-xs font-normal text-zinc-500 dark:text-zinc-400">
+                    {comments.length} {comments.length === 1 ? 'comment' : 'comments'}
+                  </span>
+                )}
+              </h3>
+              <CommentSection
+                key={task.id}
+                taskId={task.id}
+                initialComments={comments}
+                currentUserId={currentUserId}
+                currentUserRole={currentUserRole}
+              />
+            </section>
+          )}
         </div>
       </div>
     </div>

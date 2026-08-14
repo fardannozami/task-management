@@ -88,6 +88,16 @@ export interface TaskAttachment {
   virus_scan_result?: VirusScanResult | null
 }
 
+export interface TaskComment {
+  id: number
+  task_id: number
+  user_id: number
+  comment: string
+  created_at: string
+  updated_at?: string
+  user?: TaskUser | null
+}
+
 export interface Task {
   id: number
   title: string
@@ -103,6 +113,7 @@ export interface Task {
   creator?: TaskUser | null
   attachments?: TaskAttachment[]
   attachments_count?: number
+  comments?: TaskComment[]
 }
 
 export interface Paginated<T> {

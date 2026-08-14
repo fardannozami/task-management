@@ -86,6 +86,8 @@ export default async function DashboardPage({
           initialStatus={status}
           initialPriority={priority}
           initialSearch={search}
+          currentUserId={session.userId}
+          currentUserRole={session.role}
         />
       </main>
     </div>

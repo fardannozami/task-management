@@ -18,6 +18,7 @@ A Laravel 13 backend API for task management with advanced file handling, queue-
   - CSV/PDF data exports
 - Role-based access control
 - Real-time task updates via WebSockets (Laravel Reverb)
+- Real-time task comments (per-task private channel, create/delete broadcast live)
 
 ## Documentation
 
@@ -123,7 +124,14 @@ Task CRUD operations broadcast events over a private `tasks` channel using Larav
 - `task.updated` - a task was updated
 - `task.deleted` - a task was deleted
 
-Clients (the frontend dashboard) subscribe to `private-tasks`; channel authorization is handled by `POST /broadcasting/auth`, protected by the JWT `api` guard.
+Task comments broadcast over a per-task private channel (`private-task-comments.{taskId}`):
+
+- `comment.created` - a comment was added
+- `comment.deleted` - a comment was removed
+
+Clients (the frontend dashboard) subscribe to `private-tasks`; the task detail view subscribes to `private-task-comments.{taskId}`. Channel authorization is handled by `POST /broadcasting/auth`, protected by the JWT `api` guard.
+
+Comment endpoints: `GET /api/tasks/{task}/comments`, `POST /api/tasks/{task}/comments`, `DELETE /api/comments/{comment}` (owner, admin, or manager only).
 
 Configure Reverb credentials in `.env` (see `REVERB_*` variables below). Reverb must be running (`php artisan reverb:start`) for real-time updates to work.
 

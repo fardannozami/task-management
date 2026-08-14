@@ -38,6 +38,10 @@ The dashboard subscribes to the private `tasks` channel via [pusher-js](https://
 
 Requirements: the backend must be running (`php artisan serve`) together with Reverb (`php artisan reverb:start`).
 
+## Real-time Comments
+
+The task detail view includes a comments section that updates live. Each commenter posts to `POST /api/tasks/{id}/comments` (through the `app/actions/comments.ts` server actions), and every listener on the task's private channel (`private-task-comments.{id}`, subscribed in `app/ui/comment-section.tsx`) sees new comments appear instantly — plus removals when someone deletes theirs (owner, admin, or manager only).
+
 ## File Uploads (Drag & Drop)
 
 Click any task (eyeball icon) to open its detail view. There you can drag & drop files (or click to browse) to attach them to the task:
