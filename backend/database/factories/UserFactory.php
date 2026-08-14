@@ -24,13 +24,27 @@ class UserFactory extends Factory
      */
     public function definition(): array
     {
+        $names = [
+            'admin@example.com',
+            'manager@example.com',
+            'user1@example.com',
+            'user2@example.com',
+            'user3@example.com',
+        ];
+
+        static $index = 0;
+
         return [
             'name' => fake()->name(),
-            'email' => fake()->unique()->safeEmail(),
+            'email' => $names[$index++ % count($names)],
             'email_verified_at' => now(),
             'password' => static::$password ??= Hash::make('password'),
             'remember_token' => Str::random(10),
-            'role' => fake()->randomElement(['user', 'admin', 'manager']),
+            'role' => match (true) {
+                str_contains($names[($index - 1) % count($names)], 'admin') => 'admin',
+                str_contains($names[($index - 1) % count($names)], 'manager') => 'manager',
+                default => 'user',
+            },
         ];
     }
 
