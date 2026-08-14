@@ -17,7 +17,7 @@ class TaskCommentCreated implements ShouldBroadcastNow
 
     public function broadcastOn(): array
     {
-        return [new PrivateChannel('task-comments.' . $this->comment->task_id)];
+        return [new PrivateChannel('task-comments.'.$this->comment->task_id)];
     }
 
     public function broadcastAs(): string

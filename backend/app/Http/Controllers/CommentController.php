@@ -39,7 +39,7 @@ class CommentController extends Controller
     {
         $user = auth('api')->user();
 
-        if ($comment->user_id !== $user->id && !in_array($user->role, ['admin', 'manager'], true)) {
+        if ($comment->user_id !== $user->id && ! in_array($user->role, ['admin', 'manager'], true)) {
             abort(403, 'You can only delete your own comments.');
         }
 

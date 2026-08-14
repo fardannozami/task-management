@@ -18,7 +18,7 @@ class TaskCommentDeleted implements ShouldBroadcastNow
 
     public function broadcastOn(): array
     {
-        return [new PrivateChannel('task-comments.' . $this->taskId)];
+        return [new PrivateChannel('task-comments.'.$this->taskId)];
     }
 
     public function broadcastAs(): string
