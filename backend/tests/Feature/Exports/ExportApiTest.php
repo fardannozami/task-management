@@ -12,6 +12,7 @@ class ExportApiTest extends TestCase
     use RefreshDatabase;
 
     private User $user;
+
     private string $token;
 
     protected function setUp(): void
@@ -25,7 +26,7 @@ class ExportApiTest extends TestCase
     {
         Task::factory()->count(3)->create(['created_by' => $this->user->id]);
 
-        $response = $this->withHeader('Authorization', 'Bearer ' . $this->token)
+        $response = $this->withHeader('Authorization', 'Bearer '.$this->token)
             ->postJson('/api/exports/tasks/csv', [
                 'status' => 'pending',
             ]);
@@ -41,7 +42,7 @@ class ExportApiTest extends TestCase
     {
         Task::factory()->count(3)->create(['created_by' => $this->user->id]);
 
-        $response = $this->withHeader('Authorization', 'Bearer ' . $this->token)
+        $response = $this->withHeader('Authorization', 'Bearer '.$this->token)
             ->postJson('/api/exports/tasks/pdf', [
                 'status' => 'pending',
             ]);
@@ -57,7 +58,7 @@ class ExportApiTest extends TestCase
     {
         Task::factory()->count(3)->create(['created_by' => $this->user->id]);
 
-        $response = $this->withHeader('Authorization', 'Bearer ' . $this->token)
+        $response = $this->withHeader('Authorization', 'Bearer '.$this->token)
             ->get('/api/exports/tasks/csv/download?status=pending');
 
         $response->assertStatus(200)
@@ -68,7 +69,7 @@ class ExportApiTest extends TestCase
     {
         Task::factory()->count(3)->create(['created_by' => $this->user->id]);
 
-        $response = $this->withHeader('Authorization', 'Bearer ' . $this->token)
+        $response = $this->withHeader('Authorization', 'Bearer '.$this->token)
             ->get('/api/exports/tasks/pdf/download?status=pending');
 
         $response->assertStatus(200)

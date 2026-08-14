@@ -5,6 +5,7 @@ namespace App\Services;
 use App\Jobs\ScanAttachment;
 use App\Models\ChunkedUpload;
 use App\Models\Task;
+use App\Models\TaskAttachment;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
@@ -12,13 +13,14 @@ use Illuminate\Support\Str;
 class ChunkedUploadService
 {
     private const DISK = 'attachments';
+
     private const MAX_CHUNK_SIZE = 5 * 1024 * 1024; // 5MB per chunk
 
     public function init(Task $task, string $fileName, int $totalSize, ?string $mimeType = null): ChunkedUpload
     {
         $chunkSize = self::MAX_CHUNK_SIZE;
         $totalChunks = (int) ceil($totalSize / $chunkSize);
-        $tempPath = 'chunked/' . Str::random(40);
+        $tempPath = 'chunked/'.Str::random(40);
 
         Storage::disk(self::DISK)->makeDirectory($tempPath);
 
@@ -43,7 +45,7 @@ class ChunkedUploadService
             abort(409, 'Upload is no longer active.');
         }
 
-        $chunkPath = $upload->temp_path . '/' . $chunkIndex;
+        $chunkPath = $upload->temp_path.'/'.$chunkIndex;
         $chunk->storeAs('', $chunkPath, self::DISK);
 
         $upload->increment('uploaded_chunks');
@@ -55,7 +57,7 @@ class ChunkedUploadService
         return $upload->fresh();
     }
 
-    public function merge(ChunkedUpload $upload): \App\Models\TaskAttachment
+    public function merge(ChunkedUpload $upload): TaskAttachment
     {
         if ($upload->status === 'completed') {
             abort(409, 'Upload already merged.');
@@ -66,14 +68,14 @@ class ChunkedUploadService
         }
 
         $extension = pathinfo($upload->original_file_name, PATHINFO_EXTENSION);
-        $randomName = Str::random(40) . '.' . $extension;
+        $randomName = Str::random(40).'.'.$extension;
         $finalPath = $randomName;
 
         $disk = Storage::disk(self::DISK);
         $targetStream = fopen($disk->path($finalPath), 'w');
 
         for ($i = 0; $i < $upload->total_chunks; $i++) {
-            $chunkPath = $upload->temp_path . '/' . $i;
+            $chunkPath = $upload->temp_path.'/'.$i;
             $chunkStream = fopen($disk->path($chunkPath), 'r');
             stream_copy_to_stream($chunkStream, $targetStream);
             fclose($chunkStream);
@@ -81,7 +83,7 @@ class ChunkedUploadService
 
         fclose($targetStream);
 
-        $attachment = \App\Models\TaskAttachment::create([
+        $attachment = TaskAttachment::create([
             'task_id' => $upload->task_id,
             'file_name' => $this->sanitizeFileName($upload->original_file_name),
             'file_path' => $finalPath,
@@ -133,7 +135,7 @@ class ChunkedUploadService
         $fileName = trim($fileName, '_');
 
         if (empty($fileName)) {
-            $fileName = 'file_' . time();
+            $fileName = 'file_'.time();
         }
 
         return $fileName;

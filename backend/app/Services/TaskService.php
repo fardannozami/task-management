@@ -19,34 +19,34 @@ class TaskService
             ->with(['assignedUser', 'creator'])
             ->withCount('attachments');
 
-        if (!empty($filters['status'])) {
+        if (! empty($filters['status'])) {
             $query->where('status', $filters['status']);
         }
 
-        if (!empty($filters['priority'])) {
+        if (! empty($filters['priority'])) {
             $query->where('priority', $filters['priority']);
         }
 
-        if (!empty($filters['assigned_user_id'])) {
+        if (! empty($filters['assigned_user_id'])) {
             $query->where('assigned_user_id', $filters['assigned_user_id']);
         }
 
-        if (!empty($filters['created_by'])) {
+        if (! empty($filters['created_by'])) {
             $query->where('created_by', $filters['created_by']);
         }
 
-        if (!empty($filters['due_date_from'])) {
+        if (! empty($filters['due_date_from'])) {
             $query->whereDate('due_date', '>=', $filters['due_date_from']);
         }
 
-        if (!empty($filters['due_date_to'])) {
+        if (! empty($filters['due_date_to'])) {
             $query->whereDate('due_date', '<=', $filters['due_date_to']);
         }
 
-        if (!empty($filters['search'])) {
+        if (! empty($filters['search'])) {
             $query->where(function ($q) use ($filters) {
                 $q->where('title', 'like', '%'.$filters['search'].'%')
-                  ->orWhere('description', 'like', '%'.$filters['search'].'%');
+                    ->orWhere('description', 'like', '%'.$filters['search'].'%');
             });
         }
 
@@ -63,7 +63,7 @@ class TaskService
 
         $task = Task::create($data);
 
-        if (!empty($task->assigned_user_id)) {
+        if (! empty($task->assigned_user_id)) {
             $this->dispatchAssignmentNotification($task);
         }
 
@@ -80,7 +80,7 @@ class TaskService
 
         $task->refresh();
 
-        if (!empty($task->assigned_user_id) && $task->assigned_user_id !== $previousAssignedUserId) {
+        if (! empty($task->assigned_user_id) && $task->assigned_user_id !== $previousAssignedUserId) {
             $this->dispatchAssignmentNotification($task);
         }
 
@@ -102,7 +102,7 @@ class TaskService
         $assignedUser = User::find($task->assigned_user_id);
         $creator = User::find($task->created_by);
 
-        if (!$assignedUser || !$creator) {
+        if (! $assignedUser || ! $creator) {
             return;
         }
 

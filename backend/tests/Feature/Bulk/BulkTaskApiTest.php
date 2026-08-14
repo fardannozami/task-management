@@ -12,6 +12,7 @@ class BulkTaskApiTest extends TestCase
     use RefreshDatabase;
 
     private User $user;
+
     private string $token;
 
     protected function setUp(): void
@@ -26,7 +27,7 @@ class BulkTaskApiTest extends TestCase
         $tasks = Task::factory()->count(3)->create(['created_by' => $this->user->id]);
         $taskIds = $tasks->pluck('id')->toArray();
 
-        $response = $this->withHeader('Authorization', 'Bearer ' . $this->token)
+        $response = $this->withHeader('Authorization', 'Bearer '.$this->token)
             ->postJson('/api/bulk/tasks/status', [
                 'task_ids' => $taskIds,
                 'status' => 'completed',
@@ -45,7 +46,7 @@ class BulkTaskApiTest extends TestCase
 
     public function test_bulk_update_validates_task_ids(): void
     {
-        $response = $this->withHeader('Authorization', 'Bearer ' . $this->token)
+        $response = $this->withHeader('Authorization', 'Bearer '.$this->token)
             ->postJson('/api/bulk/tasks/status', [
                 'task_ids' => [99999],
                 'status' => 'completed',
@@ -56,7 +57,7 @@ class BulkTaskApiTest extends TestCase
 
     public function test_bulk_update_validates_status(): void
     {
-        $response = $this->withHeader('Authorization', 'Bearer ' . $this->token)
+        $response = $this->withHeader('Authorization', 'Bearer '.$this->token)
             ->postJson('/api/bulk/tasks/status', [
                 'task_ids' => [1],
                 'status' => 'invalid_status',

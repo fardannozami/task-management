@@ -4,7 +4,6 @@ namespace App\Services;
 
 use App\Models\TaskAttachment;
 use App\Models\TaskAttachmentVersion;
-use App\Models\VirusScanResult;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 
@@ -44,18 +43,18 @@ class AttachmentVersionService
     {
         $sourceVersion = $this->getVersion($attachment, $version);
 
-        if (!$sourceVersion) {
+        if (! $sourceVersion) {
             abort(404, 'Version not found.');
         }
 
         $disk = Storage::disk(self::DISK);
 
-        if (!$disk->exists($sourceVersion->file_path)) {
+        if (! $disk->exists($sourceVersion->file_path)) {
             abort(404, 'Version file not found on disk.');
         }
 
         $extension = pathinfo($sourceVersion->file_name, PATHINFO_EXTENSION);
-        $randomName = Str::random(40) . '.' . $extension;
+        $randomName = Str::random(40).'.'.$extension;
         $newPath = $randomName;
 
         $disk->copy($sourceVersion->file_path, $newPath);
@@ -78,7 +77,7 @@ class AttachmentVersionService
         );
 
         if (function_exists('chmod')) {
-            @chmod(storage_path('app/attachments/' . $newPath), 0640);
+            @chmod(storage_path('app/attachments/'.$newPath), 0640);
         }
 
         return $version;

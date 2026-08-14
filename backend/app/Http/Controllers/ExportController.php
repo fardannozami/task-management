@@ -8,6 +8,7 @@ use App\Services\ExportService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
+use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class ExportController extends Controller
 {
@@ -53,7 +54,7 @@ class ExportController extends Controller
         ], 202);
     }
 
-    public function downloadCsv(Request $request): \Symfony\Component\HttpFoundation\StreamedResponse
+    public function downloadCsv(Request $request): StreamedResponse
     {
         $filters = $request->only([
             'status',
@@ -67,10 +68,10 @@ class ExportController extends Controller
 
         $path = $this->exports->exportTasksCsv($filters);
 
-        return Storage::disk('local')->download($path, 'tasks_export_' . now()->format('Y-m-d_H-i-s') . '.csv');
+        return Storage::disk('local')->download($path, 'tasks_export_'.now()->format('Y-m-d_H-i-s').'.csv');
     }
 
-    public function downloadPdf(Request $request): \Symfony\Component\HttpFoundation\StreamedResponse
+    public function downloadPdf(Request $request): StreamedResponse
     {
         $filters = $request->only([
             'status',
@@ -84,6 +85,6 @@ class ExportController extends Controller
 
         $path = $this->exports->exportTasksPdf($filters);
 
-        return Storage::disk('local')->download($path, 'tasks_export_' . now()->format('Y-m-d_H-i-s') . '.pdf');
+        return Storage::disk('local')->download($path, 'tasks_export_'.now()->format('Y-m-d_H-i-s').'.pdf');
     }
 }

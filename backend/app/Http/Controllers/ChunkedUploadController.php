@@ -8,7 +8,6 @@ use App\Models\Task;
 use App\Services\ChunkedUploadService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
-use Illuminate\Http\UploadedFile;
 
 class ChunkedUploadController extends Controller
 {

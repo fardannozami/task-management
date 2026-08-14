@@ -20,7 +20,7 @@ class JwtMiddleware
             return response()->json(['message' => 'Token is required'], 401);
         }
 
-        if (!$user) {
+        if (! $user) {
             return response()->json(['message' => 'User not found'], 401);
         }
 

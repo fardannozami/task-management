@@ -12,6 +12,7 @@ class Task extends Model
 {
     /** @use HasFactory<TaskFactory> */
     use HasFactory;
+
     protected function casts(): array
     {
         return [

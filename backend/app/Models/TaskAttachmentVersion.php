@@ -10,7 +10,9 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 class TaskAttachmentVersion extends Model
 {
     protected $table = 'attachment_versions';
+
     public $timestamps = false;
+
     protected function casts(): array
     {
         return [

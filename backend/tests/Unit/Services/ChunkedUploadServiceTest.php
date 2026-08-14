@@ -8,6 +8,7 @@ use App\Models\User;
 use App\Services\ChunkedUploadService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
+use Symfony\Component\HttpKernel\Exception\HttpException;
 use Tests\TestCase;
 
 class ChunkedUploadServiceTest extends TestCase
@@ -15,13 +16,15 @@ class ChunkedUploadServiceTest extends TestCase
     use RefreshDatabase;
 
     private ChunkedUploadService $service;
+
     private Task $task;
+
     private User $user;
 
     protected function setUp(): void
     {
         parent::setUp();
-        $this->service = new ChunkedUploadService();
+        $this->service = new ChunkedUploadService;
         $this->user = User::factory()->create();
         auth('api')->login($this->user);
         $this->task = Task::factory()->create(['created_by' => $this->user->id]);
@@ -76,7 +79,7 @@ class ChunkedUploadServiceTest extends TestCase
         $this->service->uploadChunk($upload, $chunk, 0);
         $this->service->merge($upload);
 
-        $this->expectException(\Symfony\Component\HttpKernel\Exception\HttpException::class);
+        $this->expectException(HttpException::class);
         $this->service->cancel($upload);
     }
 }

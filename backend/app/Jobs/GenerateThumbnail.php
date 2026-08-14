@@ -8,15 +8,17 @@ use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Queue\SerializesModels;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
-use Intervention\Image\ImageManager;
 use Intervention\Image\Drivers\Gd\Driver;
+use Intervention\Image\ImageManager;
 
 class GenerateThumbnail implements ShouldQueue
 {
     use InteractsWithQueue, SerializesModels;
 
     private const THUMBNAIL_WIDTH = 300;
+
     private const THUMBNAIL_HEIGHT = 300;
+
     private const THUMBNAIL_QUALITY = 80;
 
     public function __construct(
@@ -29,21 +31,21 @@ class GenerateThumbnail implements ShouldQueue
     {
         $attachment = TaskAttachment::find($this->attachmentId);
 
-        if (!$attachment) {
+        if (! $attachment) {
             return;
         }
 
-        if (!str_starts_with($this->mimeType, 'image/')) {
+        if (! str_starts_with($this->mimeType, 'image/')) {
             return;
         }
 
         $disk = Storage::disk('attachments');
 
-        if (!$disk->exists($this->filePath)) {
+        if (! $disk->exists($this->filePath)) {
             return;
         }
 
-        $imageManager = new ImageManager(new Driver());
+        $imageManager = new ImageManager(new Driver);
         $image = $imageManager->read($disk->path($this->filePath));
 
         $image->scaleDown(width: self::THUMBNAIL_WIDTH, height: self::THUMBNAIL_HEIGHT);
@@ -55,8 +57,8 @@ class GenerateThumbnail implements ShouldQueue
             });
         }
 
-        $thumbnailRandomName = Str::random(40) . '.jpg';
-        $thumbnailPath = 'thumbnails/' . $thumbnailRandomName;
+        $thumbnailRandomName = Str::random(40).'.jpg';
+        $thumbnailPath = 'thumbnails/'.$thumbnailRandomName;
 
         $disk->put($thumbnailPath, $image->toJpeg(self::THUMBNAIL_QUALITY));
 

@@ -40,7 +40,7 @@ class AttachmentController extends Controller
 
         $disk = Storage::disk('attachments');
 
-        if (!$disk->exists($attachment->file_path)) {
+        if (! $disk->exists($attachment->file_path)) {
             abort(404, 'File not found');
         }
 

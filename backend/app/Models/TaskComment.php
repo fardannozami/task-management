@@ -12,6 +12,7 @@ class TaskComment extends Model
 {
     /** @use HasFactory<TaskCommentFactory> */
     use HasFactory;
+
     public function task(): BelongsTo
     {
         return $this->belongsTo(Task::class);

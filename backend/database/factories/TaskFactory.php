@@ -20,10 +20,10 @@ class TaskFactory extends Factory
 
         $status = fake()->randomElement($statuses);
         $priority = fake()->randomElement($priorities);
-        $user = User::factory()->create();
+        $user = User::query()->inRandomOrder()->first() ?? User::factory()->create();
 
         return [
-            'title' => 'Task ' . (++self::$counter) . ' - ' . fake()->word(),
+            'title' => 'Task '.(++self::$counter).' - '.fake()->word(),
             'description' => fake()->paragraph(),
             'status' => $status,
             'priority' => $priority,

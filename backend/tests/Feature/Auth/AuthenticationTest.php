@@ -53,7 +53,7 @@ class AuthenticationTest extends TestCase
 
         $token = auth('api')->login($user);
 
-        $response = $this->withHeader('Authorization', 'Bearer ' . $token)
+        $response = $this->withHeader('Authorization', 'Bearer '.$token)
             ->getJson('/api/auth/me');
 
         $response->assertStatus(200)
@@ -76,7 +76,7 @@ class AuthenticationTest extends TestCase
         $user = User::factory()->create();
         $token = auth('api')->login($user);
 
-        $response = $this->withHeader('Authorization', 'Bearer ' . $token)
+        $response = $this->withHeader('Authorization', 'Bearer '.$token)
             ->postJson('/api/auth/logout');
 
         $response->assertStatus(200)

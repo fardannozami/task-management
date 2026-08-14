@@ -5,11 +5,11 @@ namespace App\Services;
 use App\Models\TaskAttachment;
 use App\Models\VirusScanResult;
 use Illuminate\Support\Facades\Storage;
-use Illuminate\Support\Str;
 
 class VirusScanService
 {
     private const DISK = 'attachments';
+
     private const QUARANTINE_DIR = 'quarantine';
 
     private const DANGEROUS_EXTENSIONS = [
@@ -103,9 +103,9 @@ class VirusScanService
     {
         $disk = Storage::disk(self::DISK);
         $fileName = basename($attachment->file_path);
-        $quarantinePath = self::QUARANTINE_DIR . '/' . $fileName;
+        $quarantinePath = self::QUARANTINE_DIR.'/'.$fileName;
 
-        if (str_starts_with($attachment->file_path, self::QUARANTINE_DIR . '/')) {
+        if (str_starts_with($attachment->file_path, self::QUARANTINE_DIR.'/')) {
             return;
         }
 

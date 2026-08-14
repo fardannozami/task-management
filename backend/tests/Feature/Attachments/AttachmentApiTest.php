@@ -3,6 +3,7 @@
 namespace Tests\Feature\Attachments;
 
 use App\Models\Task;
+use App\Models\TaskAttachment;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
@@ -14,7 +15,9 @@ class AttachmentApiTest extends TestCase
     use RefreshDatabase;
 
     private User $user;
+
     private string $token;
+
     private Task $task;
 
     protected function setUp(): void
@@ -28,8 +31,8 @@ class AttachmentApiTest extends TestCase
     public function test_authenticated_user_can_upload_attachment(): void
     {
         $file = UploadedFile::fake()->image('document.png', 100, 100);
-        
-        $response = $this->withHeader('Authorization', 'Bearer ' . $this->token)
+
+        $response = $this->withHeader('Authorization', 'Bearer '.$this->token)
             ->post("/api/tasks/{$this->task->id}/attachments", [
                 'file' => $file,
             ]);
@@ -43,7 +46,7 @@ class AttachmentApiTest extends TestCase
 
     public function test_upload_requires_valid_file(): void
     {
-        $response = $this->withHeader('Authorization', 'Bearer ' . $this->token)
+        $response = $this->withHeader('Authorization', 'Bearer '.$this->token)
             ->postJson("/api/tasks/{$this->task->id}/attachments", [
                 'file' => 'not-a-file',
             ]);
@@ -53,7 +56,7 @@ class AttachmentApiTest extends TestCase
 
     public function test_authenticated_user_can_download_attachment(): void
     {
-        $attachment = \App\Models\TaskAttachment::factory()->create([
+        $attachment = TaskAttachment::factory()->create([
             'task_id' => $this->task->id,
             'file_path' => 'test.pdf',
             'file_name' => 'test.pdf',
@@ -62,7 +65,7 @@ class AttachmentApiTest extends TestCase
         Storage::fake('attachments');
         Storage::disk('attachments')->put('test.pdf', 'test content');
 
-        $response = $this->withHeader('Authorization', 'Bearer ' . $this->token)
+        $response = $this->withHeader('Authorization', 'Bearer '.$this->token)
             ->getJson("/api/attachments/{$attachment->id}/download");
 
         $response->assertStatus(200);
@@ -70,11 +73,11 @@ class AttachmentApiTest extends TestCase
 
     public function test_authenticated_user_can_delete_attachment(): void
     {
-        $attachment = \App\Models\TaskAttachment::factory()->create([
+        $attachment = TaskAttachment::factory()->create([
             'task_id' => $this->task->id,
         ]);
 
-        $response = $this->withHeader('Authorization', 'Bearer ' . $this->token)
+        $response = $this->withHeader('Authorization', 'Bearer '.$this->token)
             ->deleteJson("/api/attachments/{$attachment->id}");
 
         $response->assertStatus(204);
@@ -82,11 +85,11 @@ class AttachmentApiTest extends TestCase
 
     public function test_authenticated_user_can_list_attachment_versions(): void
     {
-        $attachment = \App\Models\TaskAttachment::factory()->create([
+        $attachment = TaskAttachment::factory()->create([
             'task_id' => $this->task->id,
         ]);
 
-        $response = $this->withHeader('Authorization', 'Bearer ' . $this->token)
+        $response = $this->withHeader('Authorization', 'Bearer '.$this->token)
             ->getJson("/api/attachments/{$attachment->id}/versions");
 
         $response->assertStatus(200)

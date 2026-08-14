@@ -13,7 +13,9 @@ class ChunkedUploadApiTest extends TestCase
     use RefreshDatabase;
 
     private User $user;
+
     private string $token;
+
     private Task $task;
 
     protected function setUp(): void
@@ -26,7 +28,7 @@ class ChunkedUploadApiTest extends TestCase
 
     public function test_authenticated_user_can_initiate_chunked_upload(): void
     {
-        $response = $this->withHeader('Authorization', 'Bearer ' . $this->token)
+        $response = $this->withHeader('Authorization', 'Bearer '.$this->token)
             ->postJson("/api/chunked-uploads/tasks/{$this->task->id}/init", [
                 'file_name' => 'largefile.bin',
                 'total_size' => 10485760,
@@ -45,7 +47,7 @@ class ChunkedUploadApiTest extends TestCase
 
     public function test_authenticated_user_can_upload_chunk(): void
     {
-        $initResponse = $this->withHeader('Authorization', 'Bearer ' . $this->token)
+        $initResponse = $this->withHeader('Authorization', 'Bearer '.$this->token)
             ->postJson("/api/chunked-uploads/tasks/{$this->task->id}/init", [
                 'file_name' => 'largefile.bin',
                 'total_size' => 10485760,
@@ -53,7 +55,7 @@ class ChunkedUploadApiTest extends TestCase
 
         $uploadId = $initResponse->json('id');
 
-        $response = $this->withHeader('Authorization', 'Bearer ' . $this->token)
+        $response = $this->withHeader('Authorization', 'Bearer '.$this->token)
             ->postJson("/api/chunked-uploads/{$uploadId}/chunk", [
                 'chunk' => UploadedFile::fake()->create('chunk.bin', 1024),
                 'chunk_index' => 0,
@@ -67,7 +69,7 @@ class ChunkedUploadApiTest extends TestCase
 
     public function test_authenticated_user_can_merge_chunks(): void
     {
-        $initResponse = $this->withHeader('Authorization', 'Bearer ' . $this->token)
+        $initResponse = $this->withHeader('Authorization', 'Bearer '.$this->token)
             ->postJson("/api/chunked-uploads/tasks/{$this->task->id}/init", [
                 'file_name' => 'largefile.bin',
                 'total_size' => 5242880,
@@ -75,13 +77,13 @@ class ChunkedUploadApiTest extends TestCase
 
         $uploadId = $initResponse->json('id');
 
-        $this->withHeader('Authorization', 'Bearer ' . $this->token)
+        $this->withHeader('Authorization', 'Bearer '.$this->token)
             ->postJson("/api/chunked-uploads/{$uploadId}/chunk", [
                 'chunk' => UploadedFile::fake()->create('chunk.bin', 5120),
                 'chunk_index' => 0,
             ]);
 
-        $response = $this->withHeader('Authorization', 'Bearer ' . $this->token)
+        $response = $this->withHeader('Authorization', 'Bearer '.$this->token)
             ->postJson("/api/chunked-uploads/{$uploadId}/merge");
 
         $response->assertStatus(201)
@@ -95,7 +97,7 @@ class ChunkedUploadApiTest extends TestCase
 
     public function test_authenticated_user_can_cancel_upload(): void
     {
-        $initResponse = $this->withHeader('Authorization', 'Bearer ' . $this->token)
+        $initResponse = $this->withHeader('Authorization', 'Bearer '.$this->token)
             ->postJson("/api/chunked-uploads/tasks/{$this->task->id}/init", [
                 'file_name' => 'largefile.bin',
                 'total_size' => 10485760,
@@ -103,7 +105,7 @@ class ChunkedUploadApiTest extends TestCase
 
         $uploadId = $initResponse->json('id');
 
-        $response = $this->withHeader('Authorization', 'Bearer ' . $this->token)
+        $response = $this->withHeader('Authorization', 'Bearer '.$this->token)
             ->deleteJson("/api/chunked-uploads/{$uploadId}");
 
         $response->assertStatus(204);

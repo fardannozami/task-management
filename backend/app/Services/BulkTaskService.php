@@ -2,8 +2,8 @@
 
 namespace App\Services;
 
-use App\Models\Task;
 use App\Jobs\SendTaskAssignmentEmail;
+use App\Models\Task;
 use Illuminate\Support\Facades\DB;
 
 class BulkTaskService
@@ -12,13 +12,13 @@ class BulkTaskService
     {
         $validStatuses = ['pending', 'in_progress', 'completed', 'cancelled'];
 
-        if (!in_array($status, $validStatuses)) {
+        if (! in_array($status, $validStatuses)) {
             throw new \InvalidArgumentException('Invalid status value.');
         }
 
         $updated = 0;
 
-        DB::transaction(function () use ($taskIds, $status, $updatedBy, &$updated) {
+        DB::transaction(function () use ($taskIds, $status, &$updated) {
             $tasks = Task::whereIn('id', $taskIds)->get();
 
             foreach ($tasks as $task) {
@@ -35,13 +35,13 @@ class BulkTaskService
     {
         $validPriorities = ['low', 'medium', 'high', 'urgent'];
 
-        if (!in_array($priority, $validPriorities)) {
+        if (! in_array($priority, $validPriorities)) {
             throw new \InvalidArgumentException('Invalid priority value.');
         }
 
         $updated = 0;
 
-        DB::transaction(function () use ($taskIds, $priority, $updatedBy, &$updated) {
+        DB::transaction(function () use ($taskIds, $priority, &$updated) {
             $tasks = Task::whereIn('id', $taskIds)->get();
 
             foreach ($tasks as $task) {
@@ -58,7 +58,7 @@ class BulkTaskService
     {
         $updated = 0;
 
-        DB::transaction(function () use ($taskIds, $assignedUserId, $updatedBy, &$updated) {
+        DB::transaction(function () use ($taskIds, $assignedUserId, &$updated) {
             $tasks = Task::whereIn('id', $taskIds)->get();
 
             foreach ($tasks as $task) {
@@ -87,7 +87,7 @@ class BulkTaskService
         $assignedUser = $task->assignedUser;
         $creator = $task->creator;
 
-        if (!$assignedUser || !$creator) {
+        if (! $assignedUser || ! $creator) {
             return;
         }
 

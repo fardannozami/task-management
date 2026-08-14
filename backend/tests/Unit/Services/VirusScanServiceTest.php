@@ -20,14 +20,14 @@ class VirusScanServiceTest extends TestCase
     protected function setUp(): void
     {
         parent::setUp();
-        $this->service = new VirusScanService();
+        $this->service = new VirusScanService;
     }
 
     public function test_it_marks_clean_files_as_clean(): void
     {
         $user = User::factory()->create();
         $task = Task::factory()->create(['created_by' => $user->id]);
-        
+
         $attachment = TaskAttachment::factory()->create([
             'task_id' => $task->id,
             'file_name' => 'document.pdf',
@@ -44,7 +44,7 @@ class VirusScanServiceTest extends TestCase
     {
         $user = User::factory()->create();
         $task = Task::factory()->create(['created_by' => $user->id]);
-        
+
         $attachment = TaskAttachment::factory()->create([
             'task_id' => $task->id,
             'file_name' => 'malware.exe',
@@ -61,7 +61,7 @@ class VirusScanServiceTest extends TestCase
     {
         $user = User::factory()->create();
         $task = Task::factory()->create(['created_by' => $user->id]);
-        
+
         $attachment = TaskAttachment::factory()->create([
             'task_id' => $task->id,
             'file_name' => 'virus-simulation.zip',
@@ -78,7 +78,7 @@ class VirusScanServiceTest extends TestCase
     {
         $user = User::factory()->create();
         $task = Task::factory()->create(['created_by' => $user->id]);
-        
+
         $attachment = TaskAttachment::factory()->create([
             'task_id' => $task->id,
             'file_name' => 'backdoor.exe',
@@ -99,7 +99,7 @@ class VirusScanServiceTest extends TestCase
     {
         $user = User::factory()->create();
         $task = Task::factory()->create(['created_by' => $user->id]);
-        
+
         $attachment = TaskAttachment::factory()->create([
             'task_id' => $task->id,
         ]);

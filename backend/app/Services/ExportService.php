@@ -3,10 +3,10 @@
 namespace App\Services;
 
 use App\Models\Task;
+use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use League\Csv\Writer;
-use Barryvdh\DomPDF\Facade\Pdf;
 
 class ExportService
 {
@@ -17,34 +17,34 @@ class ExportService
         $query = Task::query()
             ->with(['assignedUser', 'creator']);
 
-        if (!empty($filters['status'])) {
+        if (! empty($filters['status'])) {
             $query->where('status', $filters['status']);
         }
 
-        if (!empty($filters['priority'])) {
+        if (! empty($filters['priority'])) {
             $query->where('priority', $filters['priority']);
         }
 
-        if (!empty($filters['assigned_user_id'])) {
+        if (! empty($filters['assigned_user_id'])) {
             $query->where('assigned_user_id', $filters['assigned_user_id']);
         }
 
-        if (!empty($filters['created_by'])) {
+        if (! empty($filters['created_by'])) {
             $query->where('created_by', $filters['created_by']);
         }
 
-        if (!empty($filters['due_date_from'])) {
+        if (! empty($filters['due_date_from'])) {
             $query->whereDate('due_date', '>=', $filters['due_date_from']);
         }
 
-        if (!empty($filters['due_date_to'])) {
+        if (! empty($filters['due_date_to'])) {
             $query->whereDate('due_date', '<=', $filters['due_date_to']);
         }
 
-        if (!empty($filters['search'])) {
+        if (! empty($filters['search'])) {
             $query->where(function ($q) use ($filters) {
                 $q->where('title', 'like', '%'.$filters['search'].'%')
-                  ->orWhere('description', 'like', '%'.$filters['search'].'%');
+                    ->orWhere('description', 'like', '%'.$filters['search'].'%');
             });
         }
 
@@ -79,8 +79,8 @@ class ExportService
             ]);
         }
 
-        $fileName = 'tasks_export_' . now()->format('Y-m-d_H-i-s') . '_' . Str::random(8) . '.csv';
-        $path = self::EXPORT_DIR . '/' . $fileName;
+        $fileName = 'tasks_export_'.now()->format('Y-m-d_H-i-s').'_'.Str::random(8).'.csv';
+        $path = self::EXPORT_DIR.'/'.$fileName;
 
         Storage::disk('local')->put($path, $csv->getContent());
 
@@ -92,41 +92,41 @@ class ExportService
         $query = Task::query()
             ->with(['assignedUser', 'creator']);
 
-        if (!empty($filters['status'])) {
+        if (! empty($filters['status'])) {
             $query->where('status', $filters['status']);
         }
 
-        if (!empty($filters['priority'])) {
+        if (! empty($filters['priority'])) {
             $query->where('priority', $filters['priority']);
         }
 
-        if (!empty($filters['assigned_user_id'])) {
+        if (! empty($filters['assigned_user_id'])) {
             $query->where('assigned_user_id', $filters['assigned_user_id']);
         }
 
-        if (!empty($filters['created_by'])) {
+        if (! empty($filters['created_by'])) {
             $query->where('created_by', $filters['created_by']);
         }
 
-        if (!empty($filters['due_date_from'])) {
+        if (! empty($filters['due_date_from'])) {
             $query->whereDate('due_date', '>=', $filters['due_date_from']);
         }
 
-        if (!empty($filters['due_date_to'])) {
+        if (! empty($filters['due_date_to'])) {
             $query->whereDate('due_date', '<=', $filters['due_date_to']);
         }
 
-        if (!empty($filters['search'])) {
+        if (! empty($filters['search'])) {
             $query->where(function ($q) use ($filters) {
                 $q->where('title', 'like', '%'.$filters['search'].'%')
-                  ->orWhere('description', 'like', '%'.$filters['search'].'%');
+                    ->orWhere('description', 'like', '%'.$filters['search'].'%');
             });
         }
 
         $tasks = $query->orderBy('created_at', 'desc')->get();
 
-        $fileName = 'tasks_export_' . now()->format('Y-m-d_H-i-s') . '_' . Str::random(8) . '.pdf';
-        $path = self::EXPORT_DIR . '/' . $fileName;
+        $fileName = 'tasks_export_'.now()->format('Y-m-d_H-i-s').'_'.Str::random(8).'.pdf';
+        $path = self::EXPORT_DIR.'/'.$fileName;
 
         $pdf = Pdf::loadView('exports.tasks-pdf', [
             'tasks' => $tasks,

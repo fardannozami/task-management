@@ -4,7 +4,6 @@ namespace App\Mail;
 
 use App\Models\Task;
 use Illuminate\Bus\Queueable;
-use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Mail\Mailable;
 use Illuminate\Mail\Mailables\Content;
 use Illuminate\Mail\Mailables\Envelope;
@@ -23,7 +22,7 @@ class TaskAssignedNotification extends Mailable
     public function envelope(): Envelope
     {
         return new Envelope(
-            subject: 'New Task Assigned: ' . $this->task->title,
+            subject: 'New Task Assigned: '.$this->task->title,
         );
     }
 

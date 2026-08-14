@@ -14,6 +14,7 @@ class ScanAttachment implements ShouldQueue
     use InteractsWithQueue, SerializesModels;
 
     private const DISK = 'attachments';
+
     private const QUARANTINE_DIR = 'quarantine';
 
     private const DANGEROUS_EXTENSIONS = [
@@ -53,7 +54,7 @@ class ScanAttachment implements ShouldQueue
     {
         $attachment = TaskAttachment::find($this->attachmentId);
 
-        if (!$attachment) {
+        if (! $attachment) {
             return;
         }
 
@@ -116,9 +117,9 @@ class ScanAttachment implements ShouldQueue
     {
         $disk = Storage::disk(self::DISK);
         $fileName = basename($attachment->file_path);
-        $quarantinePath = self::QUARANTINE_DIR . '/' . $fileName;
+        $quarantinePath = self::QUARANTINE_DIR.'/'.$fileName;
 
-        if (str_starts_with($attachment->file_path, self::QUARANTINE_DIR . '/')) {
+        if (str_starts_with($attachment->file_path, self::QUARANTINE_DIR.'/')) {
             return;
         }
 

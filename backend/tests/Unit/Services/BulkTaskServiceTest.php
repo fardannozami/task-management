@@ -16,7 +16,7 @@ class BulkTaskServiceTest extends TestCase
     protected function setUp(): void
     {
         parent::setUp();
-        $this->service = new BulkTaskService();
+        $this->service = new BulkTaskService;
     }
 
     public function test_it_can_bulk_update_task_status(): void

@@ -14,12 +14,13 @@ class TaskServiceTest extends TestCase
     use RefreshDatabase;
 
     private TaskService $service;
+
     private User $user;
 
     protected function setUp(): void
     {
         parent::setUp();
-        $this->service = new TaskService();
+        $this->service = new TaskService;
         $this->user = User::factory()->create();
         Auth::shouldReceive('id')->andReturn($this->user->id);
     }

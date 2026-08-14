@@ -26,7 +26,7 @@ class AttachmentService
 
     public function __construct()
     {
-        $this->versionService = new AttachmentVersionService();
+        $this->versionService = new AttachmentVersionService;
     }
 
     public function upload(Task $task, UploadedFile $file, ?string $changeDescription = null): TaskAttachment
@@ -35,13 +35,13 @@ class AttachmentService
         $this->validateMimeType($file);
 
         $extension = $file->getClientOriginalExtension();
-        $randomName = Str::random(40) . '.' . $extension;
+        $randomName = Str::random(40).'.'.$extension;
         $path = $file->storeAs('', $randomName, 'attachments');
 
         Storage::disk('attachments')->setVisibility($path, 'private');
 
         if (function_exists('chmod')) {
-            @chmod(storage_path('app/attachments/' . $path), 0640);
+            @chmod(storage_path('app/attachments/'.$path), 0640);
         }
 
         $sanitizedFileName = $this->sanitizeFileName($file->getClientOriginalName());
@@ -111,7 +111,7 @@ class AttachmentService
 
         $disk = Storage::disk('attachments');
 
-        if (!$disk->exists($attachment->file_path)) {
+        if (! $disk->exists($attachment->file_path)) {
             abort(404, 'File not found');
         }
 
@@ -126,11 +126,11 @@ class AttachmentService
 
         $disk = Storage::disk('attachments');
 
-        if (!$disk->exists($attachment->thumbnail_path)) {
+        if (! $disk->exists($attachment->thumbnail_path)) {
             abort(404, 'Thumbnail file not found');
         }
 
-        $thumbnailName = pathinfo($attachment->file_name, PATHINFO_FILENAME) . '_thumbnail.jpg';
+        $thumbnailName = pathinfo($attachment->file_name, PATHINFO_FILENAME).'_thumbnail.jpg';
 
         return $disk->download($attachment->thumbnail_path, $thumbnailName);
     }
@@ -180,8 +180,8 @@ class AttachmentService
     {
         $extension = strtolower($file->getClientOriginalExtension());
 
-        if (!in_array($extension, self::ALLOWED_EXTENSIONS)) {
-            abort(422, 'Unsupported file extension: .' . $extension);
+        if (! in_array($extension, self::ALLOWED_EXTENSIONS)) {
+            abort(422, 'Unsupported file extension: .'.$extension);
         }
     }
 
@@ -201,7 +201,7 @@ class AttachmentService
             'video/mp4', 'video/quicktime', 'video/x-msvideo',
         ];
 
-        if (!in_array($mimeType, $allowedMimes)) {
+        if (! in_array($mimeType, $allowedMimes)) {
             abort(422, 'Unsupported file content type detected.');
         }
 
@@ -217,7 +217,7 @@ class AttachmentService
         $fileName = trim($fileName, '_');
 
         if (empty($fileName)) {
-            $fileName = 'file_' . time();
+            $fileName = 'file_'.time();
         }
 
         return $fileName;
