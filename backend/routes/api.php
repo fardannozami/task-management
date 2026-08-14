@@ -2,6 +2,7 @@
 
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\AuthController;
+use App\Http\Controllers\UserController;
 use App\Http\Controllers\TaskController;
 use App\Http\Controllers\AttachmentController;
 use App\Http\Controllers\ChunkedUploadController;
@@ -11,6 +12,8 @@ use App\Http\Controllers\ExportController;
 Route::post('/auth/login', [AuthController::class, 'login'])->middleware('throttle:5,1');
 Route::post('/auth/logout', [AuthController::class, 'logout'])->middleware('jwt');
 Route::get('/auth/me', [AuthController::class, 'me'])->middleware('jwt');
+
+Route::middleware('jwt')->get('/users', [UserController::class, 'index']);
 
 Route::middleware('jwt')->prefix('tasks')->group(function () {
     Route::get('/', [TaskController::class, 'index']);
