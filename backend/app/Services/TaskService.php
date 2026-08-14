@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Jobs\SendTaskAssignmentEmail;
 use App\Models\Task;
 use App\Models\User;
 use Illuminate\Pagination\LengthAwarePaginator;
@@ -56,12 +57,26 @@ class TaskService
     {
         $data['created_by'] = Auth::id();
 
-        return Task::create($data);
+        $task = Task::create($data);
+
+        if (!empty($task->assigned_user_id)) {
+            $this->dispatchAssignmentNotification($task);
+        }
+
+        return $task;
     }
 
     public function updateTask(Task $task, array $data): Task
     {
+        $previousAssignedUserId = $task->assigned_user_id;
+
         $task->update($data);
+
+        $task->refresh();
+
+        if (!empty($task->assigned_user_id) && $task->assigned_user_id !== $previousAssignedUserId) {
+            $this->dispatchAssignmentNotification($task);
+        }
 
         return $task->fresh(['assignedUser', 'creator']);
     }
@@ -69,5 +84,22 @@ class TaskService
     public function deleteTask(Task $task): void
     {
         $task->delete();
+    }
+
+    private function dispatchAssignmentNotification(Task $task): void
+    {
+        $assignedUser = User::find($task->assigned_user_id);
+        $creator = User::find($task->created_by);
+
+        if (!$assignedUser || !$creator) {
+            return;
+        }
+
+        dispatch(new SendTaskAssignmentEmail(
+            $task,
+            $assignedUser->email,
+            $assignedUser->name,
+            $creator->name
+        ));
     }
 }
