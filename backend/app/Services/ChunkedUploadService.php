@@ -2,9 +2,9 @@
 
 namespace App\Services;
 
+use App\Jobs\ScanAttachment;
 use App\Models\ChunkedUpload;
 use App\Models\Task;
-use App\Models\VirusScanResult;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
@@ -81,10 +81,6 @@ class ChunkedUploadService
 
         fclose($targetStream);
 
-        foreach ($upload->attachments ?? [] as $attachment) {
-            // handled below
-        }
-
         $attachment = \App\Models\TaskAttachment::create([
             'task_id' => $upload->task_id,
             'file_name' => $this->sanitizeFileName($upload->original_file_name),
@@ -94,7 +90,7 @@ class ChunkedUploadService
             'uploaded_at' => now(),
         ]);
 
-        $this->scanAttachment($attachment);
+        dispatch(new ScanAttachment($attachment->id, auth('api')->id()));
 
         $upload->update([
             'status' => 'completed',
@@ -141,11 +137,5 @@ class ChunkedUploadService
         }
 
         return $fileName;
-    }
-
-    private function scanAttachment(\App\Models\TaskAttachment $attachment): void
-    {
-        $scanner = new \App\Services\VirusScanService();
-        $scanner->scan($attachment, auth('api')->id());
     }
 }

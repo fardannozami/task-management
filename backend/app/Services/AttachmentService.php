@@ -2,15 +2,14 @@
 
 namespace App\Services;
 
+use App\Jobs\GenerateThumbnail;
+use App\Jobs\ScanAttachment;
 use App\Models\Task;
 use App\Models\TaskAttachment;
 use App\Models\TaskAttachmentVersion;
-use App\Models\VirusScanResult;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
-use Intervention\Image\ImageManager;
-use Intervention\Image\Drivers\Gd\Driver;
 
 class AttachmentService
 {
@@ -22,18 +21,10 @@ class AttachmentService
 
     private const MAX_FILE_SIZE = 51200;
 
-    private const THUMBNAIL_WIDTH = 300;
-    private const THUMBNAIL_HEIGHT = 300;
-    private const THUMBNAIL_QUALITY = 80;
-
-    private ImageManager $imageManager;
-    private VirusScanService $virusScanner;
     private AttachmentVersionService $versionService;
 
     public function __construct()
     {
-        $this->imageManager = new ImageManager(new Driver());
-        $this->virusScanner = new VirusScanService();
         $this->versionService = new AttachmentVersionService();
     }
 
@@ -50,17 +41,6 @@ class AttachmentService
 
         if (function_exists('chmod')) {
             @chmod(storage_path('app/attachments/' . $path), 0640);
-        }
-
-        $thumbnailPath = null;
-        $thumbnailSize = null;
-
-        if (str_starts_with($file->getMimeType(), 'image/')) {
-            $thumbnail = $this->generateThumbnail($file->getRealPath());
-            $thumbnailRandomName = Str::random(40) . '.jpg';
-            $thumbnailPath = 'thumbnails/' . $thumbnailRandomName;
-            Storage::disk('attachments')->put($thumbnailPath, $thumbnail->toJpeg(self::THUMBNAIL_QUALITY));
-            $thumbnailSize = Storage::disk('attachments')->size($thumbnailPath);
         }
 
         $sanitizedFileName = $this->sanitizeFileName($file->getClientOriginalName());
@@ -85,11 +65,12 @@ class AttachmentService
                 'file_size' => $file->getSize(),
                 'mime_type' => $file->getMimeType(),
                 'uploaded_at' => now(),
-                'thumbnail_path' => $thumbnailPath,
-                'thumbnail_size' => $thumbnailSize,
+                'thumbnail_path' => null,
+                'thumbnail_size' => null,
             ]);
 
-            $this->virusScanner->scan($existingAttachment, auth('api')->id());
+            dispatch(new GenerateThumbnail($existingAttachment->id, $existingAttachment->file_path, $existingAttachment->mime_type));
+            dispatch(new ScanAttachment($existingAttachment->id, auth('api')->id()));
 
             return $existingAttachment->fresh();
         }
@@ -101,8 +82,8 @@ class AttachmentService
             'file_size' => $file->getSize(),
             'mime_type' => $file->getMimeType(),
             'uploaded_at' => now(),
-            'thumbnail_path' => $thumbnailPath,
-            'thumbnail_size' => $thumbnailSize,
+            'thumbnail_path' => null,
+            'thumbnail_size' => null,
         ]);
 
         $this->versionService->createVersion(
@@ -115,7 +96,8 @@ class AttachmentService
             $changeDescription ?? 'Initial version'
         );
 
-        $this->virusScanner->scan($attachment, auth('api')->id());
+        dispatch(new GenerateThumbnail($attachment->id, $attachment->file_path, $attachment->mime_type));
+        dispatch(new ScanAttachment($attachment->id, auth('api')->id()));
 
         return $attachment;
     }
@@ -165,22 +147,22 @@ class AttachmentService
 
     public function scan(TaskAttachment $attachment, ?int $userId = null): VirusScanResult
     {
-        return $this->virusScanner->scan($attachment, $userId);
+        return app(VirusScanService::class)->scan($attachment, $userId);
     }
 
     public function getScanResult(TaskAttachment $attachment): ?VirusScanResult
     {
-        return $this->virusScanner->getScanResult($attachment);
+        return app(VirusScanService::class)->getScanResult($attachment);
     }
 
     public function isClean(TaskAttachment $attachment): bool
     {
-        return $this->virusScanner->isClean($attachment);
+        return app(VirusScanService::class)->isClean($attachment);
     }
 
     public function isInfected(TaskAttachment $attachment): bool
     {
-        return $this->virusScanner->isInfected($attachment);
+        return app(VirusScanService::class)->isInfected($attachment);
     }
 
     public function getVersions(TaskAttachment $attachment)
@@ -191,22 +173,6 @@ class AttachmentService
     public function restoreVersion(TaskAttachment $attachment, int $version, ?int $userId = null): TaskAttachmentVersion
     {
         return $this->versionService->restoreVersion($attachment, $version, $userId);
-    }
-
-    private function generateThumbnail(string $filePath): \Intervention\Image\Image
-    {
-        $image = $this->imageManager->read($filePath);
-
-        $image->scaleDown(width: self::THUMBNAIL_WIDTH, height: self::THUMBNAIL_HEIGHT);
-
-        if ($image->width() > self::THUMBNAIL_WIDTH || $image->height() > self::THUMBNAIL_HEIGHT) {
-            $image->resize(self::THUMBNAIL_WIDTH, self::THUMBNAIL_HEIGHT, function ($constraint) {
-                $constraint->aspectRatio();
-                $constraint->upsize();
-            });
-        }
-
-        return $image;
     }
 
     private function validateExtension(UploadedFile $file): void
